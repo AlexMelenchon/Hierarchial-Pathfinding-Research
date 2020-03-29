@@ -13,7 +13,33 @@
 #include <algorithm>
 
 //HPA*-------------------------------------------
-#define ENTRACE_NODE_DIVISOR 6
+#define ENTRACE_NODE_MIN 6
+#define CLUSTER_SIZE_LVL 5
+
+struct Cluster
+{
+	Cluster();
+	Cluster(int width, int height, iPoint& pos);
+	Cluster(const Cluster& clust);
+
+	iPoint pos;
+	int width, height;
+};
+
+struct ClustNodes
+{
+	iPoint pos;
+	std::vector <Cluster*> edges;
+};
+
+struct graphLevel
+{
+	std::vector <std::vector<Cluster>> lvlClusters;
+	std::vector <Cluster> nodes;
+
+
+	void buildClusters(int lvl);
+};
 
 
 
@@ -39,16 +65,6 @@ struct PathNode
 
 	int parentDir;
 	int myDirection;
-
-	bool operator==(PathNode* node)
-	{
-		if (g == node->g && h == node->h && pos == node->pos && parent == node->parent)
-		{
-			return true;
-		}
-
-		return false;
-	}
 };
 
 
@@ -86,11 +102,21 @@ public:
 	std::multimap<int, PathNode>::iterator Find(iPoint point, std::multimap<int, PathNode>& map);
 	int FindV(iPoint point, std::vector<PathNode>& vec);
 
-private:
+
+	//HPA*---------------------------------------------
+	void preprocessing(int maxLevel);
+	void abstractMaze();
+
+
 	uint width;
 	uint height;
-	uchar* map;
+private:
+
+	uchar* walkabilityMap;
 	std::vector<iPoint> last_path;
+
+
+	graphLevel absGraph;
 };
 
 

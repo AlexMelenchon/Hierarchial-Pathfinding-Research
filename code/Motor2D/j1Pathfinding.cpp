@@ -1,17 +1,17 @@
-#include "p2Defs.h"
+﻿#include "p2Defs.h"
 #include "p2Log.h"
 #include "j1App.h"
 #include "j1Pathfinding.h"
 
 
-ModulePathfinding::ModulePathfinding() : j1Module(), map(NULL), last_path(DEFAULT_PATH_LENGTH), width(0), height(0)
+ModulePathfinding::ModulePathfinding() : j1Module(), walkabilityMap(NULL), last_path(DEFAULT_PATH_LENGTH), width(0), height(0)
 {
 	name.create("pathfinding");
 }
 
 ModulePathfinding::~ModulePathfinding()
 {
-	RELEASE_ARRAY(map);
+	RELEASE_ARRAY(walkabilityMap);
 }
 
 
@@ -20,21 +20,101 @@ bool ModulePathfinding::CleanUp()
 	LOG("Freeing pathfinding library");
 
 	last_path.clear();
-	RELEASE_ARRAY(map);
+	RELEASE_ARRAY(walkabilityMap);
 	return true;
 }
 
 
 void ModulePathfinding::SetMap(uint width, uint height, uchar* data)
 {
+	//Basic A*----------------------------------------
 	this->width = width;
 	this->height = height;
 
-	RELEASE_ARRAY(map);
-	map = new uchar[width * height];
-	memcpy(map, data, width * height);
+	RELEASE_ARRAY(walkabilityMap);
+	walkabilityMap = new uchar[width * height];
+	memcpy(walkabilityMap, data, width * height);
+
+	//HPA*--------------------------------------------
+	preprocessing(2);
 }
 
+void ModulePathfinding::preprocessing(int maxLevel)
+{
+	abstractMaze();
+	//buildGraph();
+	//for (int l = 2; l <= maxLevel; l++)
+	//{
+	//	addLevelToGraph(l);
+	//}
+}
+
+void ModulePathfinding::abstractMaze()
+{
+	absGraph.nodes.clear();
+	absGraph.buildClusters(1);
+
+	//Cluster c1, c2;
+	//for (uint i = 0; i < absGraph.lvlClusters.size(); i++)
+	//{
+	//	c1 = absGraph.lvlClusters[i];
+
+	//	for (uint k = i + 1; k < absGraph.lvlClusters.size(); ++k)
+	//	{
+	//		c2 = absGraph.lvlClusters[k];
+
+	//		if (adjacent(c1, c2))
+	//			E = E ∪ buildEntrances(c1, c2);
+	//	}
+	//}
+}
+
+void graphLevel::buildClusters(int lvl)
+{
+	std::vector <Cluster> clusterVector;
+	int width = App->pathfinding->width;
+	int height = App->pathfinding->height;
+
+	Cluster c;
+
+	for (int i = 0; i < width; i += CLUSTER_SIZE_LVL)
+	{
+		if (i + CLUSTER_SIZE_LVL > width)
+			c.width = width - (i);
+		else
+			c.width = CLUSTER_SIZE_LVL;
+
+		for (int k = 0; k < height; k += CLUSTER_SIZE_LVL)
+		{
+			if (k + CLUSTER_SIZE_LVL > height)
+				c.height = height - (k);
+			else
+				c.height = CLUSTER_SIZE_LVL;
+
+			c.pos = { i,k };
+			clusterVector.push_back(Cluster(c));
+		}
+	}
+
+	this->lvlClusters.push_back(clusterVector);
+
+}
+
+Cluster::Cluster() : pos{ -1,-1 }, width(-1), height(-1)
+{}
+
+Cluster::Cluster(int width, int height, iPoint& pos) :
+
+	width(width), height(height), pos(pos)
+{}
+
+Cluster::Cluster(const Cluster& clust) :
+
+	width(clust.width), height(clust.height), pos(clust.pos)
+{}
+
+
+//---------------------------------------------------
 
 bool ModulePathfinding::CheckBoundaries(const iPoint& pos) const
 {
@@ -53,13 +133,13 @@ bool ModulePathfinding::IsWalkable(const iPoint& pos) const
 uchar ModulePathfinding::GetTileAt(const iPoint& pos) const
 {
 	if (CheckBoundaries(pos))
-		return map[(pos.y * width) + pos.x];
+		return walkabilityMap[(pos.y * width) + pos.x];
 
 	return INVALID_WALK_CODE;
 }
 
 
-std::vector <iPoint>* ModulePathfinding::GetLastPath() 
+std::vector <iPoint>* ModulePathfinding::GetLastPath()
 {
 	return &last_path;
 }
@@ -137,7 +217,7 @@ float PathNode::CalculateF(const iPoint& destination)
 	if (is_Diagonal)
 	{
 
-		g = parent->g + 1.5;
+		g = parent->g + 1.41;
 	}
 	else
 	{
@@ -162,7 +242,7 @@ int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destinatio
 
 	std::vector<PathNode> closed;
 	open.insert(std::pair<int, PathNode>(0, PathNode(0, origin.DistanceTo(destination), origin, nullptr, 0, 0)));
-
+	int i = 0;
 	while (open.empty() == false)
 	{
 		std::multimap<int, PathNode>::iterator lowest = open.begin();
@@ -171,6 +251,7 @@ int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destinatio
 
 		node->myDirection = closed.size() - 1;
 		open.erase(lowest);
+
 
 		if (node->pos == destination)
 		{
