@@ -51,10 +51,12 @@ void ModulePathfinding::preprocessing(int maxLevel)
 
 void ModulePathfinding::abstractMaze()
 {
-	absGraph.nodes.clear();
+	absGraph.entrances.clear();
 
 	absGraph.buildClusters(1);
 	absGraph.buildEntrances(0);
+	true;
+	//absGraph.connectNodes(0);
 }
 
 void graphLevel::buildEntrances(int lvl)
@@ -71,27 +73,71 @@ void graphLevel::buildEntrances(int lvl)
 		{
 			c2 = &this->lvlClusters[lvl].at(k);
 
-			adjacentDir = adjacents(c1, c2, lvl+1);
+			adjacentDir = adjacents(c1, c2, lvl + 1);
 
 			if (adjacentDir != ADJACENT_DIR::DIR_NONE)
-				this->nodes.push_back(buildNodes(c1, c2, adjacentDir, lvl));
+				createEntrance(c1, c2, adjacentDir, lvl);
 		}
 	}
 }
 
-std::vector <Node> graphLevel::buildNodes(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl)
+void graphLevel::createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl)
 {
-	std::vector <Node> nodeVec;
 	int adjDist = CLUSTER_SIZE_LVL * lvl;
 
+	Entrance newEntrance;
+	int startedAt = INT_MIN;
+	bool isCurrentWalkable = true;
+
+	switch (adjDir)
+	{
+	case ADJACENT_DIR::DIR_DOWN:
+	{
+		for (int i = c1->pos.x; i <= c1->width; i++)
+		{
+			isCurrentWalkable = (App->pathfinding->IsWalkable({ i, c1->pos.y + c1->height - 1 }) && App->pathfinding->IsWalkable({ i, c2->pos.y }));
+
+			if (isCurrentWalkable)
+			{
+				if (startedAt == INT_MIN)
+					startedAt = i;
+
+				//Check if is last && if we're dragging some obstacles
+				if (i == c1->width)
+					this->entrances.push_back(Entrance({ c1->pos.x + startedAt, c1->pos.y + c1->height - 1 }, c1->width - startedAt, 2, adjDir, c1, c2));
+			}
+			else if (!isCurrentWalkable)
+			{
+				if (startedAt != INT_MIN)
+				{
+					if (i == c1->width)
+						this->entrances.push_back(Entrance({ c1->pos.x + startedAt,  c1->pos.y + c1->height - 1 }, i - 1 - startedAt, 2, adjDir, c1, c2));
+					else
+					{
+						this->entrances.push_back(Entrance({ c1->pos.x + startedAt, c1->pos.y + c1->height - 1 }, i - startedAt, 2, adjDir, c1, c2));
+						startedAt = INT_MIN;
+					}
+				}
+
+
+			}
+
+		}
+	}
+	break;
+
+
+
+	}
+	/*
 	switch (adjDir)
 	{
 	case ADJACENT_DIR::DIR_UP:
 	{
 		for (int i = c1->pos.x; i < c1->width; i += ENTRACE_NODE_MIN)
 		{
-			nodeVec.push_back(Node({i, c1->pos.y}, c1));
-			nodeVec.push_back(Node({i, c2->pos.y + c2->height -1}, c2));
+			this->nodes[lvl].push_back(Node({ i, c1->pos.y }, c1));
+			this->nodes[lvl].push_back(Node({ i, c2->pos.y + c2->height - 1 }, c2));
 		}
 	}
 	break;
@@ -99,8 +145,8 @@ std::vector <Node> graphLevel::buildNodes(Cluster* c1, Cluster* c2, ADJACENT_DIR
 	{
 		for (int i = c1->pos.x; i < c1->width; i += ENTRACE_NODE_MIN)
 		{
-			nodeVec.push_back(Node({ i, c1->pos.y + c1->height -1}, c1));
-			nodeVec.push_back(Node({ i, c2->pos.y }, c2));
+			this->nodes[lvl].push_back(Node({ i, c1->pos.y + c1->height - 1 }, c1));
+			this->nodes[lvl].push_back(Node({ i, c2->pos.y }, c2));
 		}
 	}
 	break;
@@ -108,8 +154,8 @@ std::vector <Node> graphLevel::buildNodes(Cluster* c1, Cluster* c2, ADJACENT_DIR
 	{
 		for (int i = c1->pos.y; i < c1->height; i += ENTRACE_NODE_MIN)
 		{
-			nodeVec.push_back(Node({ c1->pos.x + c1->width -1, i }, c1));
-			nodeVec.push_back(Node({ c2->pos.x, i }, c2));
+			this->nodes[lvl].push_back(Node({ c1->pos.x + c1->width - 1, i }, c1));
+			this->nodes[lvl].push_back(Node({ c2->pos.x, i }, c2));
 		}
 	}
 	break;
@@ -117,16 +163,14 @@ std::vector <Node> graphLevel::buildNodes(Cluster* c1, Cluster* c2, ADJACENT_DIR
 	{
 		for (int i = c1->pos.y; i < c1->height; i += ENTRACE_NODE_MIN)
 		{
-			nodeVec.push_back(Node({ c1->pos.x + c1->width - 1, i }, c1));
-			nodeVec.push_back(Node({ c2->pos.x, i }, c2));
+			this->nodes[lvl].push_back(Node({ c1->pos.x + c1->width - 1, i }, c1));
+			this->nodes[lvl].push_back(Node({ c2->pos.x, i }, c2));
 		}
-
 	}
 	break;
 
 	}
-
-	return nodeVec;
+	*/
 }
 
 ADJACENT_DIR graphLevel::adjacents(Cluster* c1, Cluster* c2, int lvl)
@@ -178,6 +222,13 @@ void graphLevel::buildClusters(int lvl)
 
 	this->lvlClusters.push_back(clusterVector);
 }
+
+Entrance::Entrance() : pos{ 0,0 }, width(0), height(0), clusterDir(ADJACENT_DIR::DIR_NONE), from(nullptr), to(nullptr)
+{}
+
+Entrance::Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir, Cluster* from, Cluster* to)
+	: pos(pos), width(width), height(height), clusterDir(dir), from(from), to(to)
+{}
 
 Node::Node(iPoint pos, Cluster* parentCluster) : pos{ pos.x,pos.y }, parentCluster(parentCluster)
 {}
@@ -313,7 +364,7 @@ float PathNode::CalculateF(const iPoint& destination)
 
 int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destination)
 {
-	if (IsWalkable(origin) == false || IsWalkable(destination) == false) 
+	if (IsWalkable(origin) == false || IsWalkable(destination) == false)
 	{
 		return -1;
 	}
