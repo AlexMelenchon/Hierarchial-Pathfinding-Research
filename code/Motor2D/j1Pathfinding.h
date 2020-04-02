@@ -13,8 +13,19 @@
 #include <algorithm>
 
 //HPA*-------------------------------------------
-#define ENTRACE_NODE_MIN 6
+#define ENTRACE_NODE_MIN 2
 #define CLUSTER_SIZE_LVL 5
+
+//This is always relative to c1
+enum class ADJACENT_DIR
+{
+	DIR_NONE = -1,
+
+	DIR_UP,
+	DIR_DOWN,
+	DIR_RIGHT,
+	DIR_LEFT
+};
 
 struct Cluster
 {
@@ -26,19 +37,27 @@ struct Cluster
 	int width, height;
 };
 
-struct ClustNodes
+struct Node
 {
+	Node(iPoint pos, Cluster*);
+
 	iPoint pos;
-	std::vector <Cluster*> edges;
+	std::vector <Node*> edges;
+
+	Cluster* parentCluster;
 };
 
 struct graphLevel
 {
 	std::vector <std::vector<Cluster>> lvlClusters;
-	std::vector <Cluster> nodes;
+	std::vector <std::vector<Node>> nodes;
 
 
 	void buildClusters(int lvl);
+	void buildEntrances(int lvl);
+
+	ADJACENT_DIR adjacents(Cluster* c1, Cluster* c2, int lvl);
+	std::vector <Node> buildNodes(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
 };
 
 
@@ -46,7 +65,6 @@ struct graphLevel
 
 //Basic A*---------------------------------------
 struct PathList;
-
 
 struct PathNode
 {
