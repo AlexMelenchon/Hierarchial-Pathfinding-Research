@@ -13,18 +13,19 @@
 #include <algorithm>
 
 //HPA*-------------------------------------------
-#define NODE_MIN_DISTANCE 2
+#define NODE_MIN_DISTANCE 3
 #define CLUSTER_SIZE_LVL 5
+
+
+struct Node;
 
 //This is always relative to c1
 enum class ADJACENT_DIR
 {
 	DIR_NONE = -1,
 
-	DIR_UP,
-	DIR_DOWN,
-	DIR_RIGHT,
-	DIR_LEFT
+	VERTICAL,
+	LATERAL
 };
 
 enum class EDGE_TYPE
@@ -44,6 +45,8 @@ struct Cluster
 
 	iPoint pos;
 	int width, height;
+
+	std::vector <Node*> clustNodes;
 };
 
 struct Entrance
@@ -54,20 +57,28 @@ struct Entrance
 	iPoint pos;
 	int width, height;
 
-	ADJACENT_DIR clusterDir;
+	ADJACENT_DIR dir;
 
 	Cluster* from;
 	Cluster* to;
 };
 
+struct Edge
+{
+	Edge(Node* dest, int distanceTo, EDGE_TYPE type);
+
+	Node* dest;
+	int distanceTo;
+
+	EDGE_TYPE type;
+};
+
 struct Node
 {
-	Node(iPoint pos, Cluster*);
+	Node(iPoint pos);
 
 	iPoint pos;
-	std::vector <Node*> edges;
-
-	Cluster* parentCluster;
+	std::vector <Edge> edges;
 };
 
 
@@ -149,7 +160,8 @@ public:
 
 
 	//HPA*---------------------------------------------
-	void preprocessing(int maxLevel);
+	void preProcessing(int maxLevel);
+	void buildGraph();
 	void abstractMaze();
 
 
