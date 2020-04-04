@@ -52,7 +52,7 @@ void ModulePathfinding::SetMap(uint width, uint height, uchar* data)
 	memcpy(walkabilityMap, data, width * height);
 
 	//HPA*--------------------------------------------
-	preProcessing(1);
+	preProcessing(MAX_LEVELS);
 }
 
 void ModulePathfinding::preProcessing(int maxLevel)
@@ -77,7 +77,7 @@ void ModulePathfinding::buildGraph()
 {
 	Entrance* currEntrance;
 	Cluster* c1, * c2;
-	Node* n1, * n2;
+	HierNode* n1, * n2;
 	absGraph.nodes.resize(absGraph.nodes.size() + 1);
 
 	for (uint i = 0; i < absGraph.entrances.size(); i++)
@@ -92,8 +92,8 @@ void ModulePathfinding::buildGraph()
 		{
 			for (int i = currEntrance->pos.y; i < (currEntrance->pos.y + currEntrance->height); i += NODE_MIN_DISTANCE)
 			{
-				n1 = new Node({ currEntrance->pos.x, i });
-				n2 = new Node({ currEntrance->pos.x + 1, i });
+				n1 = new HierNode({ currEntrance->pos.x, i });
+				n2 = new HierNode({ currEntrance->pos.x + 1, i });
 
 				c1->clustNodes.push_back(n1);
 				c2->clustNodes.push_back(n2);
@@ -110,8 +110,8 @@ void ModulePathfinding::buildGraph()
 		{
 			for (int i = currEntrance->pos.x; i < (currEntrance->pos.x + currEntrance->width); i += NODE_MIN_DISTANCE)
 			{
-				n1 = new Node({ i, currEntrance->pos.y });
-				n2 = new Node({ i, currEntrance->pos.y + 1 });
+				n1 = new HierNode({ i, currEntrance->pos.y });
+				n2 = new HierNode({ i, currEntrance->pos.y + 1 });
 
 				c1->clustNodes.push_back(n1);
 				c2->clustNodes.push_back(n2);
@@ -135,19 +135,16 @@ void ModulePathfinding::buildGraph()
 	{
 		clusterIt = &absGraph.lvlClusters[0].at(i);
 
-		for (int y = 0; y < clusterIt->clustNodes.size(); y ++)
+		for (int y = 0; y < clusterIt->clustNodes.size(); y++)
 		{
 			for (int k = y + 1; k < clusterIt->clustNodes.size(); k++)
 			{
-				distanceTo = clusterIt->clustNodes[y]->pos.DistanceTo(clusterIt->clustNodes[k]->pos);
-				clusterIt->clustNodes[y]->edges.push_back(Edge(clusterIt->clustNodes[k], distanceTo, EDGE_TYPE::TP_INTER));
-				clusterIt->clustNodes[k]->edges.push_back(Edge(clusterIt->clustNodes[y], distanceTo, EDGE_TYPE::TP_INTER));
+				distanceTo = App->pathfinding->CreatePath(clusterIt->clustNodes[y]->pos, clusterIt->clustNodes[k]->pos, PATH_TYPE::CALCULATE_COST, 0);
+				clusterIt->clustNodes[y]->edges.push_back(Edge(clusterIt->clustNodes[k], distanceTo, EDGE_TYPE::TP_INTRA));
+				clusterIt->clustNodes[k]->edges.push_back(Edge(clusterIt->clustNodes[y], distanceTo, EDGE_TYPE::TP_INTRA));
 			}
-
 		}
-
 	}
-
 }
 
 void graphLevel::buildEntrances(int lvl)
@@ -242,7 +239,7 @@ void graphLevel::createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, i
 
 	}
 
-	
+
 }
 
 ADJACENT_DIR graphLevel::adjacents(Cluster* c1, Cluster* c2, int lvl)
@@ -293,7 +290,55 @@ void graphLevel::buildClusters(int lvl)
 	this->lvlClusters.push_back(clusterVector);
 }
 
-Edge::Edge(Node* dest, int distanceTo, EDGE_TYPE type) : dest(dest), distanceTo(distanceTo), type(type)
+void graphLevel::insertNode(iPoint pos, int maxLvl)
+{
+	HierNode newNode(pos);
+	Cluster* c;
+
+	if (!App->pathfinding->IsWalkable(pos))
+		return;
+
+	for (int l = 1; l <= maxLvl; l++)
+	{
+		if (l > this->lvlClusters.size())
+			break;
+
+		c = determineCluster(newNode, l);
+		ConnectNodeToBorder(newNode, c, l);
+	}
+
+}
+
+void graphLevel::ConnectNodeToBorder(HierNode node, Cluster* c, int lvl)
+{
+	int distanceTo = 0;
+	for (int i = 0; i < c->clustNodes.size(); i++)
+	{
+		distanceTo = node.pos.DistanceTo(c->clustNodes[i]->pos);
+		distanceTo = App->pathfinding->CreatePath(node.pos, c->clustNodes[i]->pos, PATH_TYPE::CALCULATE_COST, 0);
+
+		node.edges.push_back(Edge(c->clustNodes[i], distanceTo, EDGE_TYPE::TP_INTRA));
+		c->clustNodes[i]->edges.push_back(Edge(&node, distanceTo, EDGE_TYPE::TP_INTRA));
+	}
+
+}
+
+Cluster* graphLevel::determineCluster(HierNode node, int lvl)
+{
+	Cluster* it;
+	for (int i = 0; i < lvlClusters[lvl].size(); i++)
+	{
+		it = &lvlClusters[lvl].at(i);
+
+		if (node.pos.x > it->pos.x && node.pos.x < it->pos.x + it->width &&
+			node.pos.y > it->pos.y && node.pos.y < it->pos.y + it->height)
+			return it;
+	}
+
+	return nullptr;
+}
+
+Edge::Edge(HierNode* dest, int distanceTo, EDGE_TYPE type) : dest(dest), distanceTo(distanceTo), type(type)
 {}
 
 Entrance::Entrance() : pos{ 0,0 }, width(0), height(0), dir(ADJACENT_DIR::DIR_NONE), from(nullptr), to(nullptr)
@@ -303,7 +348,7 @@ Entrance::Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir, Cluster*
 	: pos(pos), width(width), height(height), dir(dir), from(from), to(to)
 {}
 
-Node::Node(iPoint pos) : pos{ pos.x,pos.y }
+HierNode::HierNode(iPoint pos) : PathNode(-1, -1, pos, this, -1, -1, false)
 {}
 
 Cluster::Cluster() : pos{ -1,-1 }, width(-1), height(-1)
@@ -419,7 +464,6 @@ float PathNode::Score() const
 
 float PathNode::CalculateF(const iPoint& destination)
 {
-
 	if (is_Diagonal)
 	{
 		g = parent->g + 1.41;
@@ -434,8 +478,18 @@ float PathNode::CalculateF(const iPoint& destination)
 	return g + h;
 }
 
+int ModulePathfinding::HierarchicalCreatePath(const iPoint& origin, const iPoint& destination, int maxLvl)
+{
+	int ret = 0;
+	absGraph.insertNode(origin, maxLvl);
+	absGraph.insertNode(destination, maxLvl);
 
-int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destination)
+
+	return ret;
+}
+
+
+int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destination, PATH_TYPE type, int lvl)
 {
 	if (IsWalkable(origin) == false || IsWalkable(destination) == false)
 	{
@@ -448,30 +502,43 @@ int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destinatio
 
 	std::vector<PathNode> closed;
 	open.insert(std::pair<int, PathNode>(0, PathNode(0, origin.DistanceTo(destination), origin, nullptr, 0, 0)));
-	int i = 0;
+
 	while (open.empty() == false)
 	{
 		std::multimap<int, PathNode>::iterator lowest = open.begin();
 		closed.push_back(lowest->second);
 		std::vector<PathNode>::pointer node = &closed.back();
 
-		node->myDirection = closed.size() - 1;
+		node->myDirection = (closed.size() - 1);
 		open.erase(lowest);
 
 
 		if (node->pos == destination)
 		{
-			int dir;
-			for (node; node->pos != origin; node = &closed[dir])
+			switch (type)
 			{
-				last_path.push_back(node->pos);
-				dir = node->parentDir;
+			case PATH_TYPE::GENERATE_PATH:
+			{
+				int dir;
+				for (node; node->pos != origin; node = &closed[dir])
+				{
+					last_path.push_back(node->pos);
+					dir = node->parentDir;
+				}
+				last_path.push_back(origin);
+
+				std::reverse(last_path.begin(), last_path.end());
+
+				return 0;
 			}
-			last_path.push_back(origin);
+			break;
+			case PATH_TYPE::CALCULATE_COST:
+			{
+				return node->g;
+			}
+			break;
+			}
 
-			std::reverse(last_path.begin(), last_path.end());
-
-			return 0;
 		}
 
 		std::vector<PathNode> adjList;
