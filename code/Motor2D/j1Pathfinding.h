@@ -13,10 +13,9 @@
 #include <algorithm>
 
 //HPA*-------------------------------------------
-#define NODE_MIN_DISTANCE 6
+#define NODE_MIN_DISTANCE 5
 #define CLUSTER_SIZE_LVL 5
 #define MAX_LEVELS 1
-
 
 class HierNode;
 
@@ -76,11 +75,9 @@ struct Edge
 
 struct graphLevel
 {
-	std::vector <std::vector<Cluster*>> lvlClusters;
-	std::vector <std::vector<HierNode*>> nodes;
+	std::vector <std::vector<Cluster>> lvlClusters;
 
 	std::vector <Entrance> entrances;
-
 
 	void buildClusters(int lvl);
 	void buildEntrances(int lvl);
@@ -88,10 +85,12 @@ struct graphLevel
 	ADJACENT_DIR adjacents(Cluster* c1, Cluster* c2, int lvl);
 	void createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
 
-	HierNode* insertNode(iPoint pos, int maxLvl);
+	HierNode* insertNode(iPoint pos, int maxLvl, bool tmp);
 	void deleteNode(HierNode* toDelete, int maxLvl);
 	Cluster* determineCluster(iPoint nodePos, int lvl);
 	void ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl);
+
+	HierNode* NodeExists(iPoint pos, Cluster* lvl);
 };
 
 //Basic A*---------------------------------------
@@ -131,13 +130,14 @@ class HierNode : public PathNode
 {
 public:
 	HierNode(iPoint pos);
-	HierNode(iPoint pos, int g, int h);
+	HierNode(iPoint pos, bool tmp);
+	HierNode(float g, const iPoint& pos, PathNode* parent,int myDir, int parentdir, std::vector<Edge*> edges);
 
 	float CalculateF(const iPoint& destination);
 	std::vector <Edge*> edges;
 	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill);
 
-	int costToMove;
+	bool tmp;
 };
 
 
@@ -158,7 +158,7 @@ public:
 
 	float SimpleAPathfinding(const iPoint& origin, const iPoint& destination, PATH_TYPE type);
 
-	int HPAPathfinding(const HierNode& origin, const HierNode& destination, int lvl);
+	int HPAPathfinding(const HierNode& origin, const iPoint& destination, int lvl);
 
 	int CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl);
 
@@ -187,7 +187,6 @@ public:
 	void buildGraph();
 	void abstractMaze();
 
-
 	uint width;
 	uint height;
 
@@ -198,8 +197,6 @@ private:
 	uchar* walkabilityMap;
 	std::vector<iPoint> last_path;
 	std::vector<iPoint> last_abs_path;
-
-
 };
 
 

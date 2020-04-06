@@ -67,7 +67,7 @@ bool j1Scene::PreUpdate()
 	{
 		if(origin_selected == true)
 		{
-			BROFILER_CATEGORY("HPA", Profiler::Color::Gold);
+			BROFILER_CATEGORY("HPA", Profiler::Color::DarkGreen);
 			App->pathfinding->CreatePath(origin, p,1);
 			origin_selected = false;
 		}
@@ -82,7 +82,7 @@ bool j1Scene::PreUpdate()
 	{
 		if (origin_selected == true)
 		{
-			BROFILER_CATEGORY("A*", Profiler::Color::DarkGreen);
+			BROFILER_CATEGORY("A*", Profiler::Color::Gold);
 			App->pathfinding->SimpleAPathfinding(origin, p, PATH_TYPE::GENERATE_PATH);
 			origin_selected = false;
 		}
@@ -166,11 +166,11 @@ bool j1Scene::Update(float dt)
 		//iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.x-2, App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.y-2);
 		//App->render->Blit(debug_tex5x5, pos.x, pos.y);
 
-		for (int y = 0; y < App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes.size(); y++)
-		{
-			iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.x, App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.y);
-			App->render->Blit(debug_tex, pos.x, pos.y);
-		}
+		//for (int y = 0; y < App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes.size(); y++)
+		//{
+		//	iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.x, App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.y);
+		//	App->render->Blit(debug_tex, pos.x, pos.y);
+		//}
 
 	}
 
