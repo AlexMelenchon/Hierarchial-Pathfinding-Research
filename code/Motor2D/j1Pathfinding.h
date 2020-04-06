@@ -13,7 +13,7 @@
 #include <algorithm>
 
 //HPA*-------------------------------------------
-#define NODE_MIN_DISTANCE 3
+#define NODE_MIN_DISTANCE 6
 #define CLUSTER_SIZE_LVL 5
 #define MAX_LEVELS 1
 
@@ -69,15 +69,15 @@ struct Edge
 	Edge(HierNode* dest, int distanceTo, EDGE_TYPE type);
 
 	HierNode* dest;
-	int distanceTo;
+	float moveCost;
 
 	EDGE_TYPE type;
 };
 
 struct graphLevel
 {
-	std::vector <std::vector<Cluster>> lvlClusters;
-	std::vector <std::vector<HierNode>> nodes;
+	std::vector <std::vector<Cluster*>> lvlClusters;
+	std::vector <std::vector<HierNode*>> nodes;
 
 	std::vector <Entrance> entrances;
 
@@ -88,13 +88,13 @@ struct graphLevel
 	ADJACENT_DIR adjacents(Cluster* c1, Cluster* c2, int lvl);
 	void createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
 
-	void insertNode(iPoint pos, int maxLvl);
-	Cluster* determineCluster(HierNode node, int lvl);
-	void ConnectNodeToBorder(HierNode node, Cluster* c, int lvl);
+	HierNode* insertNode(iPoint pos, int maxLvl);
+	void deleteNode(HierNode* toDelete, int maxLvl);
+	Cluster* determineCluster(iPoint nodePos, int lvl);
+	void ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl);
 };
 
 //Basic A*---------------------------------------
-struct PathList;
 
 enum class PATH_TYPE
 {
@@ -131,10 +131,13 @@ class HierNode : public PathNode
 {
 public:
 	HierNode(iPoint pos);
+	HierNode(iPoint pos, int g, int h);
 
-	float CalculateF(const iPoint& destination) { return 1.f; };
-	std::vector <Edge> edges;
-	uint FindWalkableAdjacents(std::vector<PathNode>& list_to_fill) { return 1; };
+	float CalculateF(const iPoint& destination);
+	std::vector <Edge*> edges;
+	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill);
+
+	int costToMove;
 };
 
 
@@ -153,13 +156,15 @@ public:
 	void SetMap(uint width, uint height, uchar* data);
 
 
-	int CreatePath(const iPoint& origin, const iPoint& destination, PATH_TYPE type, int lvl);
+	float SimpleAPathfinding(const iPoint& origin, const iPoint& destination, PATH_TYPE type);
 
+	int HPAPathfinding(const HierNode& origin, const HierNode& destination, int lvl);
 
-	int HierarchicalCreatePath(const iPoint& origin, const iPoint& destination, int maxLvl);
+	int CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl);
 
 
 	std::vector<iPoint>* GetLastPath();
+	std::vector<iPoint>* GetLastAbsPath();
 
 
 	bool CheckBoundaries(const iPoint& pos) const;
@@ -171,10 +176,10 @@ public:
 
 	void SavePath(std::vector<iPoint>* path);
 
-	std::multimap<int, PathNode>::iterator Find(iPoint point, std::multimap<int, PathNode>& map);
-	int FindV(iPoint point, std::vector<PathNode>& vec);
-
-
+	std::multimap<int, PathNode>::iterator Find(iPoint point, std::multimap<int, PathNode>* map);
+	std::multimap<int, HierNode>::iterator Find(iPoint point, std::multimap<int, HierNode>* map);
+	int FindV(iPoint point, std::vector<PathNode>* vec);
+	int FindV(iPoint point, std::vector<HierNode>* vec);
 
 public:
 	//HPA*---------------------------------------------
@@ -185,13 +190,16 @@ public:
 
 	uint width;
 	uint height;
+
+	graphLevel absGraph;
+
 private:
 
 	uchar* walkabilityMap;
 	std::vector<iPoint> last_path;
+	std::vector<iPoint> last_abs_path;
 
 
-	graphLevel absGraph;
 };
 
 
