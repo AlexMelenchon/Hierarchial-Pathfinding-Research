@@ -2,6 +2,7 @@
 #define __j1SCENE_H__
 
 #include "j1Module.h"
+#include <vector>
 
 struct SDL_Texture;
 
@@ -37,6 +38,10 @@ private:
 	SDL_Texture* debug_tex5x5;
 
 	bool entrances = false;
+
+	std::vector<iPoint> absPath;
+
+	float updatePathTimer = 0.f;
 };
 
 #endif // __j1SCENE_H__

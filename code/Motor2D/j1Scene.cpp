@@ -68,8 +68,10 @@ bool j1Scene::PreUpdate()
 		if(origin_selected == true)
 		{
 			BROFILER_CATEGORY("HPA", Profiler::Color::DarkGreen);
-			App->pathfinding->CreatePath(origin, p,1);
+			absPath.clear();
+			App->pathfinding->CreatePath(origin, p,1, nullptr);
 			origin_selected = false;
+			App->pathfinding->RequestPath(nullptr, &absPath);
 		}
 		else
 		{
@@ -82,8 +84,9 @@ bool j1Scene::PreUpdate()
 	{
 		if (origin_selected == true)
 		{
+			absPath.clear();
 			BROFILER_CATEGORY("A*", Profiler::Color::Gold);
-			App->pathfinding->SimpleAPathfinding(origin, p, PATH_TYPE::GENERATE_PATH);
+			App->pathfinding->SimpleAPathfinding(origin, p, REQUEST_TYPE::GENERATE_PATH);
 			origin_selected = false;
 		}
 	}
@@ -136,18 +139,16 @@ bool j1Scene::Update(float dt)
 
 	App->render->Blit(debug_tex, p.x, p.y);
 
-	std::vector<iPoint>* path = App->pathfinding->GetLastPath();
 
-	for (std::vector<iPoint>::iterator it = path->begin(); it != path->end(); ++it)
+	if (App->input->GetKey(SDL_SCANCODE_F3) == KEY_DOWN || (updatePathTimer += dt) > 1.5f)
 	{
-		iPoint pos = App->map->MapToWorld(it->x, it->y);
-		App->render->Blit(debug_tex, pos.x, pos.y);
+		 App->pathfinding->RequestPath(nullptr, &absPath);
+		 updatePathTimer = 0.f;
 	}
-
-
-	std::vector<iPoint>* absPath = App->pathfinding->GetLastAbsPath();
-
-	for (std::vector<iPoint>::iterator it = absPath->begin(); it != absPath->end(); ++it)
+	
+	
+	if (absPath.size() > 0)
+	for (std::vector<iPoint>::iterator it = absPath.begin(); it != absPath.end(); ++it)
 	{
 		iPoint pos = App->map->MapToWorld(it->x, it->y);
 		App->render->Blit(debug_tex, pos.x, pos.y);

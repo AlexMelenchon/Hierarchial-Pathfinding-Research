@@ -35,10 +35,7 @@ bool ModulePathfinding::CleanUp()
 	}
 	absGraph.lvlClusters.clear();
 
-
-
-	last_abs_path.clear();
-
+	generatedPaths.clear();
 	return true;
 }
 
@@ -55,6 +52,7 @@ void ModulePathfinding::SetMap(uint width, uint height, uchar* data)
 
 	//HPA*--------------------------------------------
 	preProcessing(MAX_LEVELS);
+
 }
 
 void ModulePathfinding::preProcessing(int maxLevel)
@@ -154,7 +152,7 @@ void ModulePathfinding::buildGraph()
 		{
 			for (int k = y + 1; k < clusterIt->clustNodes.size(); k++)
 			{
-				distanceTo = App->pathfinding->SimpleAPathfinding(clusterIt->clustNodes[y]->pos, clusterIt->clustNodes[k]->pos, PATH_TYPE::CALCULATE_COST);
+				distanceTo = App->pathfinding->SimpleAPathfinding(clusterIt->clustNodes[y]->pos, clusterIt->clustNodes[k]->pos, REQUEST_TYPE::CALCULATE_COST);
 				clusterIt->clustNodes[y]->edges.push_back(new Edge(clusterIt->clustNodes[k], distanceTo, EDGE_TYPE::TP_INTRA));
 				clusterIt->clustNodes[k]->edges.push_back(new Edge(clusterIt->clustNodes[y], distanceTo, EDGE_TYPE::TP_INTRA));
 			}
@@ -362,9 +360,16 @@ void graphLevel::ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl)
 
 }
 
-Cluster* graphLevel::determineCluster(iPoint pos, int lvl)
+Cluster* graphLevel::determineCluster(iPoint pos, int lvl, Cluster* firstCheck)
 {
 	BROFILER_CATEGORY("Determine Cluster", Profiler::Color::DeepPink);
+
+	if (firstCheck)
+	{
+		if (pos.x >= firstCheck->pos.x && pos.y >= firstCheck->pos.y &&
+			pos.x < firstCheck->pos.x + firstCheck->width && pos.y < firstCheck->pos.y + firstCheck->height)
+			return firstCheck;
+	}
 
 	Cluster* it;
 	for (int i = 0; i < lvlClusters[lvl - 1].size(); i++)
@@ -437,6 +442,9 @@ Cluster::Cluster(const Cluster& clust) :
 	width(clust.width), height(clust.height), pos(clust.pos)
 {}
 
+generatedPath::generatedPath(std::vector <iPoint> vector, PATH_TYPE type, int lvl) : path(vector), type(type), lvl(lvl)
+{}
+
 
 //---------------------------------------------------
 
@@ -460,17 +468,6 @@ uchar ModulePathfinding::GetTileAt(const iPoint& pos) const
 		return walkabilityMap[(pos.y * width) + pos.x];
 
 	return INVALID_WALK_CODE;
-}
-
-
-std::vector <iPoint>* ModulePathfinding::GetLastPath()
-{
-	return &last_path;
-}
-
-std::vector <iPoint>* ModulePathfinding::GetLastAbsPath()
-{
-	return &last_abs_path;
 }
 
 
@@ -576,15 +573,17 @@ float HierNode::CalculateF(const iPoint& destination)
 	return g + h;
 }
 
-int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl)
+PATH_TYPE ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl, Entity* pathRequest)
 {
-	int ret = 0;
+	PATH_TYPE ret = PATH_TYPE::NO_TYPE;
 	HierNode* n1, * n2;
 
 	if (IsWalkable(origin) == false || IsWalkable(destination) == false)
 	{
-		return -1;
+		return ret;
 	}
+
+	last_path.clear();
 
 	if (maxLvl > 0)
 	{
@@ -592,7 +591,7 @@ int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destinatio
 		n2 = absGraph.insertNode(destination, maxLvl, true);
 
 		if (!n1 || !n2)
-			return -1;
+			return ret;
 
 		n1->h = n1->pos.DistanceTo(n2->pos);
 
@@ -603,15 +602,19 @@ int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destinatio
 			absGraph.deleteNode((HierNode*)n1, maxLvl);
 		if (n2->tmp)
 			absGraph.deleteNode((HierNode*)n2, maxLvl);
+
+		ret = PATH_TYPE::ABSTRACT;
+
 	}
 	else
 	{
-		SimpleAPathfinding(origin, destination, PATH_TYPE::GENERATE_PATH);
+		SimpleAPathfinding(origin, destination, REQUEST_TYPE::GENERATE_PATH);
+
+		ret = PATH_TYPE::SIMPLE;
 	}
 
-	// HERE, absPath() here & then get the nodes out
-	// Then to a new function that refines & smoothes the path gradually (on request)
-	//This means that we will have to store the path, somehow :D; With an entity pointer I supose
+
+	generatedPaths.insert({ pathRequest, generatedPath(last_path, ret, maxLvl) });
 
 	return ret;
 }
@@ -620,8 +623,6 @@ int ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& destinatio
 int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& destination, int lvl)
 {
 	BROFILER_CATEGORY("HPA Algorithm", Profiler::Color::AliceBlue);
-
-	last_abs_path.clear();
 
 	std::multimap<int, HierNode> open;
 
@@ -649,12 +650,12 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 			int dir;
 			for (curr; curr->pos != origin.pos; curr = &closed[dir])
 			{
-				last_abs_path.push_back(curr->pos);
+				last_path.push_back(curr->pos);
 				dir = curr->parentDir;
 			}
-			last_abs_path.push_back(origin.pos);
+			last_path.push_back(origin.pos);
 
-			std::reverse(last_abs_path.begin(), last_abs_path.end());
+			std::reverse(last_path.begin(), last_path.end());
 
 			return 0;
 		}
@@ -686,7 +687,7 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 }
 
 
-float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& destination, PATH_TYPE type)
+float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& destination, REQUEST_TYPE type)
 {
 	BROFILER_CATEGORY("A* Algorithm", Profiler::Color::AliceBlue);
 
@@ -719,7 +720,7 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 		{
 			switch (type)
 			{
-			case PATH_TYPE::GENERATE_PATH:
+			case REQUEST_TYPE::GENERATE_PATH:
 			{
 				int dir;
 				for (curr; curr->pos != origin; curr = &closed[dir])
@@ -734,7 +735,7 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 				return closed.back().g;
 			}
 			break;
-			case PATH_TYPE::CALCULATE_COST:
+			case REQUEST_TYPE::CALCULATE_COST:
 			{
 				return curr->g;
 			}
@@ -768,17 +769,83 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 	}
 }
 
-void ModulePathfinding::SavePath(std::vector <iPoint>* path)
+bool ModulePathfinding::RequestPath(Entity* request, std::vector <iPoint>* path)
 {
-	const std::vector <iPoint>* last_path = App->pathfinding->GetLastPath();
-	path->clear();
+	if (generatedPaths.size() < 1)
+		return false;
 
-	for (uint i = 0; i < last_path->size(); ++i)
+	std::unordered_map<Entity*, generatedPath>::iterator it = generatedPaths.begin();
+
+	for (int i = 0; i < generatedPaths.size(); i++)
 	{
-		path->push_back({ (last_path->begin() + i)->x, (last_path->begin() + i)->y });
+		if (it->first == request)
+		{
+			switch (it->second.type)
+			{
+			case PATH_TYPE::SIMPLE:
+			{
+				return &it->second.path;
+			}
+			break;
+			case PATH_TYPE::ABSTRACT:
+			{
+				std::vector <iPoint>* refinedPath;
+
+				refinedPath =  RefineAndSmoothPath(&it->second.path, it->second.lvl);
+
+				if (refinedPath)
+				{
+					for (int i = 0; i < refinedPath->size(); i++)
+					{
+						path->push_back(refinedPath->at(i));
+					}
+					return true;
+				}
+			}
+			break;
+			}
+		}
+		it++;
 	}
 
+	return false;
 }
+
+std::vector<iPoint>* ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* path, int lvl)
+{
+	std::vector <iPoint>* ret = nullptr;
+	Cluster* curr = nullptr;
+	iPoint currPos = {0,0};
+	int from = 0;
+
+	for (int i = 0; i < path->size(); i++)
+	{
+		currPos = path->at(i);
+		if (!curr)
+		{
+			curr = absGraph.determineCluster(currPos, lvl);
+			from = i;
+			continue;
+		}
+
+		if (absGraph.determineCluster(currPos, lvl, curr) != curr || (i == path->size() - 1 && path->size() > 0))
+		{
+			SimpleAPathfinding(path->at(from), currPos, REQUEST_TYPE::GENERATE_PATH);
+			ret = &last_path;
+			path->erase(path->begin() + from, path->begin() + i);
+			break;
+
+			//The last one repeats itself
+
+			//Check Diagonals abs(x2 - x) == abs(y2 - y)
+			//Check Directions
+		}
+
+	}
+
+	return ret;
+}
+
 
 std::multimap<int, PathNode>::iterator ModulePathfinding::Find(iPoint point, std::multimap<int, PathNode>* map)
 {

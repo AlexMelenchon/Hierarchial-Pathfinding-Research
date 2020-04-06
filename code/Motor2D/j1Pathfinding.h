@@ -11,6 +11,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <unordered_map>
 
 //HPA*-------------------------------------------
 #define NODE_MIN_DISTANCE 5
@@ -18,6 +19,7 @@
 #define MAX_LEVELS 1
 
 class HierNode;
+class Entity;
 
 //This is always relative to c1
 enum class ADJACENT_DIR
@@ -87,7 +89,7 @@ struct graphLevel
 
 	HierNode* insertNode(iPoint pos, int maxLvl, bool tmp);
 	void deleteNode(HierNode* toDelete, int maxLvl);
-	Cluster* determineCluster(iPoint nodePos, int lvl);
+	Cluster* determineCluster(iPoint nodePos, int lvl, Cluster* firstCheck = nullptr);
 	void ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl);
 
 	HierNode* NodeExists(iPoint pos, Cluster* lvl);
@@ -95,7 +97,7 @@ struct graphLevel
 
 //Basic A*---------------------------------------
 
-enum class PATH_TYPE
+enum class REQUEST_TYPE
 {
 	NO_TYPE = -1,
 
@@ -103,6 +105,25 @@ enum class PATH_TYPE
 	CALCULATE_COST
 
 };
+
+enum class PATH_TYPE
+{
+	NO_TYPE = -1,
+
+	ABSTRACT,
+	SIMPLE
+
+};
+
+struct generatedPath
+ {
+	generatedPath(std::vector <iPoint> vector, PATH_TYPE type, int lvl);
+
+	std::vector<iPoint> path;
+	PATH_TYPE type;
+	int lvl;
+};
+
 
 class PathNode
 {
@@ -156,30 +177,26 @@ public:
 	void SetMap(uint width, uint height, uchar* data);
 
 
-	float SimpleAPathfinding(const iPoint& origin, const iPoint& destination, PATH_TYPE type);
+	float SimpleAPathfinding(const iPoint& origin, const iPoint& destination, REQUEST_TYPE type);
 
 	int HPAPathfinding(const HierNode& origin, const iPoint& destination, int lvl);
 
-	int CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl);
-
-
-	std::vector<iPoint>* GetLastPath();
-	std::vector<iPoint>* GetLastAbsPath();
-
+	PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl, Entity* pathRequest);
 
 	bool CheckBoundaries(const iPoint& pos) const;
-
 
 	bool IsWalkable(const iPoint& pos) const;
 
 	uchar GetTileAt(const iPoint& pos) const;
 
-	void SavePath(std::vector<iPoint>* path);
+	bool RequestPath(Entity* request, std::vector <iPoint>* path);
 
 	std::multimap<int, PathNode>::iterator Find(iPoint point, std::multimap<int, PathNode>* map);
 	std::multimap<int, HierNode>::iterator Find(iPoint point, std::multimap<int, HierNode>* map);
 	int FindV(iPoint point, std::vector<PathNode>* vec);
 	int FindV(iPoint point, std::vector<HierNode>* vec);
+
+	std::vector<iPoint>* RefineAndSmoothPath(std::vector<iPoint>* path, int lvl);
 
 public:
 	//HPA*---------------------------------------------
@@ -196,8 +213,8 @@ private:
 
 	uchar* walkabilityMap;
 	std::vector<iPoint> last_path;
-	std::vector<iPoint> last_abs_path;
-};
 
+	std::unordered_map <Entity*, generatedPath> generatedPaths;
+};
 
 #endif // __j1PATHFINDING_H__
