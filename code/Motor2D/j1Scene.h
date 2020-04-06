@@ -34,6 +34,9 @@ public:
 
 private:
 	SDL_Texture* debug_tex;
+	SDL_Texture* debug_tex5x5;
+
+	bool entrances = false;
 };
 
 #endif // __j1SCENE_H__

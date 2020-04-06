@@ -4,6 +4,14 @@
 #include "p2List.h"
 #include "j1Module.h"
 #include "PugiXml\src\pugixml.hpp"
+#include "PerfectTimer.h"
+#include "SimpleTimer.h"
+
+
+#define TIME_CONST 50
+
+#define MAX_DT 3
+
 
 // Modules
 class j1Window;
@@ -97,10 +105,45 @@ private:
 	p2SString			title;
 	p2SString			organization;
 
-	mutable bool		want_to_save;
-	bool				want_to_load;
+
+	bool				capFrames;
+	bool				wantToLoad;
+	mutable bool		wantToSave;
+
+
 	p2SString			load_game;
 	mutable p2SString	save_game;
+
+	//Timers of the game
+	SimpleTimer* gameTimer = nullptr;
+	PerfectTimer* gamePerfTimer = nullptr;
+
+	//Calculates the amount of frames rendered in the last second
+	SimpleTimer* lastSecFrames = nullptr;
+
+	//The amount of time spended in the calculation of the last frame
+	SimpleTimer lastFrameTimer;
+
+	//The amount of frames rendered since the game started
+	uint64 frame_count = 0u;
+
+	//The amount of frames rendered last second
+	uint last_second_frame_count = 0u;
+
+	//The amount of time spended calculating the last frame
+	uint32 last_frame_ms = 0u;
+
+	//The amount of frames calculated in the last second
+	uint32 frames_on_last_update = 0u;
+
+	float avg_fps = 0.0f;
+
+	//The frame cap of the game
+	uint capTime = 0u;
+
+	//Controls if the frame cap is activated or not
+	bool frameCap = false;
+
 };
 
 extern j1App* App; // No student is asking me about that ... odd :-S

@@ -9,6 +9,7 @@
 #include "j1Map.h"
 #include "j1PathFinding.h"
 #include "j1Scene.h"
+#include "Brofiler/Brofiler/Brofiler.h"
 
 j1Scene::j1Scene() : j1Module()
 {
@@ -42,6 +43,7 @@ bool j1Scene::Start()
 	}
 
 	debug_tex = App->tex->Load("maps/path2.png");
+	debug_tex5x5 = App->tex->Load("maps/path.png");
 
 	return true;
 }
@@ -59,17 +61,30 @@ bool j1Scene::PreUpdate()
 	iPoint p = App->render->ScreenToWorld(x, y);
 	p = App->map->WorldToMap(p.x, p.y);
 
+
+
 	if(App->input->GetMouseButtonDown(SDL_BUTTON_LEFT) == KEY_DOWN)
 	{
 		if(origin_selected == true)
 		{
-			App->pathfinding->CreatePath(origin, p, PATH_TYPE::GENERATE_PATH, 0);
+			BROFILER_CATEGORY("HPA", Profiler::Color::Gold);
+			App->pathfinding->CreatePath(origin, p,1);
 			origin_selected = false;
 		}
 		else
 		{
 			origin = p;
 			origin_selected = true;
+		}
+	}
+
+	if (App->input->GetMouseButtonDown(SDL_BUTTON_RIGHT) == KEY_DOWN)
+	{
+		if (origin_selected == true)
+		{
+			BROFILER_CATEGORY("A*", Profiler::Color::DarkGreen);
+			App->pathfinding->SimpleAPathfinding(origin, p, PATH_TYPE::GENERATE_PATH);
+			origin_selected = false;
 		}
 	}
 
@@ -86,16 +101,19 @@ bool j1Scene::Update(float dt)
 		App->SaveGame("save_game.xml");
 
 	if(App->input->GetKey(SDL_SCANCODE_UP) == KEY_REPEAT)
-		App->render->camera.y += 1;
+		App->render->camera.y += 750 * dt;
 
 	if(App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_REPEAT)
-		App->render->camera.y -= 1;
+		App->render->camera.y -= 750 * dt;
 
 	if(App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
-		App->render->camera.x += 1;
+		App->render->camera.x += 750 * dt;
 
 	if(App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
-		App->render->camera.x -= 1;
+		App->render->camera.x -= 750 * dt;
+
+	if (App->input->GetKey(SDL_SCANCODE_F2) == KEY_DOWN)
+		entrances = !entrances;
 
 	App->map->Draw();
 
@@ -124,6 +142,36 @@ bool j1Scene::Update(float dt)
 	{
 		iPoint pos = App->map->MapToWorld(it->x, it->y);
 		App->render->Blit(debug_tex, pos.x, pos.y);
+	}
+
+
+	std::vector<iPoint>* absPath = App->pathfinding->GetLastAbsPath();
+
+	for (std::vector<iPoint>::iterator it = absPath->begin(); it != absPath->end(); ++it)
+	{
+		iPoint pos = App->map->MapToWorld(it->x, it->y);
+		App->render->Blit(debug_tex, pos.x, pos.y);
+	}
+
+	if(entrances)
+	for (int i = 0; i < App->pathfinding->absGraph.entrances.size(); i++)
+	{
+		iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.entrances[i].pos.x, App->pathfinding->absGraph.entrances[i].pos.y);
+		App->render->Blit(debug_tex, pos.x, pos.y);
+	}
+
+	for (int i = 0; i < App->pathfinding->absGraph.lvlClusters[0].size(); i++)
+	{
+		return true;
+		//iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.x-2, App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.y-2);
+		//App->render->Blit(debug_tex5x5, pos.x, pos.y);
+
+		for (int y = 0; y < App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes.size(); y++)
+		{
+			iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.x, App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.y);
+			App->render->Blit(debug_tex, pos.x, pos.y);
+		}
+
 	}
 
 	return true;
