@@ -87,7 +87,7 @@ struct graphLevel
 	ADJACENT_DIR adjacents(Cluster* c1, Cluster* c2, int lvl);
 	void createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
 
-	HierNode* insertNode(iPoint pos, int maxLvl, bool tmp);
+	HierNode* insertNode(iPoint pos, int maxLvl, bool* toDelete = nullptr);
 	void deleteNode(HierNode* toDelete, int maxLvl);
 	Cluster* determineCluster(iPoint nodePos, int lvl, Cluster* firstCheck = nullptr);
 	void ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl);
@@ -96,15 +96,6 @@ struct graphLevel
 };
 
 //Basic A*---------------------------------------
-
-enum class REQUEST_TYPE
-{
-	NO_TYPE = -1,
-
-	GENERATE_PATH,
-	CALCULATE_COST
-
-};
 
 enum class PATH_TYPE
 {
@@ -157,8 +148,6 @@ public:
 	float CalculateF(const iPoint& destination);
 	std::vector <Edge*> edges;
 	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill);
-
-	bool tmp;
 };
 
 
@@ -177,7 +166,7 @@ public:
 	void SetMap(uint width, uint height, uchar* data);
 
 
-	float SimpleAPathfinding(const iPoint& origin, const iPoint& destination, REQUEST_TYPE type);
+	float SimpleAPathfinding(const iPoint& origin, const iPoint& destination);
 
 	int HPAPathfinding(const HierNode& origin, const iPoint& destination, int lvl);
 
@@ -196,7 +185,8 @@ public:
 	int FindV(iPoint point, std::vector<PathNode>* vec);
 	int FindV(iPoint point, std::vector<HierNode>* vec);
 
-	std::vector<iPoint>* RefineAndSmoothPath(std::vector<iPoint>* path, int lvl);
+	bool RefineAndSmoothPath(std::vector<iPoint>* absPath, int lvl, std::vector<iPoint>* refinedPath);
+	bool IsStraightPath(iPoint from, iPoint to);
 
 public:
 	//HPA*---------------------------------------------

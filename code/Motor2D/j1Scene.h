@@ -33,10 +33,11 @@ public:
 	// Called before quitting
 	bool CleanUp();
 
-private:
+
 	SDL_Texture* debug_tex;
 	SDL_Texture* debug_tex5x5;
 
+private:
 	bool entrances = false;
 
 	std::vector<iPoint> absPath;

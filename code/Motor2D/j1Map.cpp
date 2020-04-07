@@ -141,6 +141,21 @@ iPoint j1Map::WorldToMap(int x, int y) const
 	return ret;
 }
 
+//isometric map to world
+void j1Map::MapToWorldCoords(int posX, int posY, MapData& dat, float& outX, float& outY)
+{
+	outX = (posX - posY) * dat.tile_width * 0.5f;
+	outY = (posX + posY) * dat.tile_height * 0.5f;
+}
+
+
+//isometric world to map
+void j1Map::WorldToMapCoords(int x, int y, MapData& dat, int& outX, int& outY) const
+{
+	outX = int((x / (dat.tile_width * 0.5f) + y / (dat.tile_height * 0.5f)) * 0.5f);
+	outY = int((y / (dat.tile_height * 0.5f) - (x / (dat.tile_width * 0.5f))) * 0.5f);
+}
+
 SDL_Rect TileSet::GetTileRect(int id) const
 {
 	int relative_id = id - firstgid;

@@ -18,10 +18,11 @@ class j1Window;
 class j1Input;
 class j1Render;
 class j1Textures;
-class j1Audio;
 class j1Scene;
 class j1Map;
 class ModulePathfinding;
+class ModuleCollision;
+class j1EntityManager;
 
 class j1App
 {
@@ -89,10 +90,11 @@ public:
 	j1Input*			input;
 	j1Render*			render;
 	j1Textures*			tex;
-	j1Audio*			audio;
 	j1Scene*			scene;
 	j1Map*				map;
 	ModulePathfinding*	pathfinding;
+	ModuleCollision*	coll;
+	j1EntityManager*	entMan;
 
 private:
 

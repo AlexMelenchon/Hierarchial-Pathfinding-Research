@@ -8,11 +8,12 @@
 #include "j1Input.h"
 #include "j1Render.h"
 #include "j1Textures.h"
-#include "j1Audio.h"
 #include "j1Scene.h"
 #include "j1Map.h"
 #include "j1Pathfinding.h"
 #include "j1App.h"
+#include "Collision.h"
+#include "EntityManager.h"
 
 // Constructor
 j1App::j1App(int argc, char* args[]) : argc(argc), args(args)
@@ -29,17 +30,17 @@ j1App::j1App(int argc, char* args[]) : argc(argc), args(args)
 	win = new j1Window();
 	render = new j1Render();
 	tex = new j1Textures();
-	audio = new j1Audio();
 	scene = new j1Scene();
 	map = new j1Map();
 	pathfinding = new ModulePathfinding();
+	coll = new ModuleCollision();
+	entMan = new j1EntityManager();
 
 	// Ordered for awake / Start / Update
 	// Reverse order of CleanUp
 	AddModule(input);
 	AddModule(win);
 	AddModule(tex);
-	AddModule(audio);
 	AddModule(map);
 	AddModule(pathfinding);
 	AddModule(scene);

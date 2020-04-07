@@ -3,7 +3,6 @@
 #include "j1App.h"
 #include "j1Input.h"
 #include "j1Textures.h"
-#include "j1Audio.h"
 #include "j1Render.h"
 #include "j1Window.h"
 #include "j1Map.h"
@@ -71,7 +70,6 @@ bool j1Scene::PreUpdate()
 			absPath.clear();
 			App->pathfinding->CreatePath(origin, p,1, nullptr);
 			origin_selected = false;
-			App->pathfinding->RequestPath(nullptr, &absPath);
 		}
 		else
 		{
@@ -86,7 +84,8 @@ bool j1Scene::PreUpdate()
 		{
 			absPath.clear();
 			BROFILER_CATEGORY("A*", Profiler::Color::Gold);
-			App->pathfinding->SimpleAPathfinding(origin, p, REQUEST_TYPE::GENERATE_PATH);
+			App->pathfinding->CreatePath(origin, p, 0, nullptr);
+			App->pathfinding->RequestPath(nullptr, &absPath);
 			origin_selected = false;
 		}
 	}
@@ -140,7 +139,7 @@ bool j1Scene::Update(float dt)
 	App->render->Blit(debug_tex, p.x, p.y);
 
 
-	if (App->input->GetKey(SDL_SCANCODE_F3) == KEY_DOWN || (updatePathTimer += dt) > 1.5f)
+	if (App->input->GetKey(SDL_SCANCODE_F3) == KEY_DOWN )
 	{
 		 App->pathfinding->RequestPath(nullptr, &absPath);
 		 updatePathTimer = 0.f;

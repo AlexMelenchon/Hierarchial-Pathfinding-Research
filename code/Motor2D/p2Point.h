@@ -41,7 +41,7 @@ public:
 	// Math ------------------------------------------------
 	p2Point operator -(const p2Point &v) const
 	{
-		p2Vector2 r;
+		p2Point r;
 
 		r.x = x - v.x;
 		r.y = y - v.y;
@@ -51,13 +51,35 @@ public:
 
 	p2Point operator + (const p2Point &v) const
 	{
-		p2Vector2 r;
+		p2Point r;
 
 		r.x = x + v.x;
 		r.y = y + v.y;
 
 		return(r);
 	}
+
+
+	p2Point operator * (const TYPE& v) const
+	{
+		p2Point r;
+
+		r.x = x * v;
+		r.y = y * v;
+
+		return(r);
+	}
+
+	p2Point operator / (const TYPE& v) const
+	{
+		p2Point r;
+
+		r.x = x / v;
+		r.y = y / v;
+
+		return(r);
+	}
+
 
 	const p2Point& operator -=(const p2Point &v)
 	{
@@ -103,6 +125,24 @@ public:
 		y = -y;
 
 		return(*this);
+	}
+
+	double Module()
+	{
+		if ((x <= 0.001f && x >= -0.001f) && (y <= 0.001f && y >= -0.001f))//if the vector is nearly 0
+			return 0;
+		else
+			return sqrtf((x * x) + (y * y));
+	}
+
+	void Normalize()
+	{
+		double mod = Module();
+		if (mod != 0)
+		{
+			x = (x / mod);
+			y = (y / mod);
+		}
 	}
 
 	// Distances ---------------------------------------------
