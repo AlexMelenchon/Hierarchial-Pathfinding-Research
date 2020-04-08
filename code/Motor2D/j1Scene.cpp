@@ -160,17 +160,17 @@ bool j1Scene::Update(float dt)
 		App->render->Blit(debug_tex, pos.x, pos.y);
 	}
 
-	for (int i = 0; i < App->pathfinding->absGraph.lvlClusters[0].size(); i++)
+	for (int i = 0; i < App->pathfinding->absGraph.lvlClusters[1].size(); i++)
 	{
 		return true;
 		//iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.x-2, App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.y-2);
 		//App->render->Blit(debug_tex5x5, pos.x, pos.y);
 
-		//for (int y = 0; y < App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes.size(); y++)
-		//{
-		//	iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.x, App->pathfinding->absGraph.lvlClusters[0].at(i)->clustNodes[y]->pos.y);
-		//	App->render->Blit(debug_tex, pos.x, pos.y);
-		//}
+		for (int y = 0; y < App->pathfinding->absGraph.lvlClusters[1].at(i).clustNodes.size(); y++)
+		{
+			iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[1].at(i).clustNodes[y]->pos.x, App->pathfinding->absGraph.lvlClusters[1].at(i).clustNodes[y]->pos.y);
+			App->render->Blit(debug_tex, pos.x, pos.y);
+		}
 
 	}
 
