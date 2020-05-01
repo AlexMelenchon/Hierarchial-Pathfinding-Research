@@ -15,7 +15,6 @@ ModulePathfinding::~ModulePathfinding()
 	RELEASE_ARRAY(walkabilityMap);
 }
 
-
 bool ModulePathfinding::CleanUp()
 {
 	LOG("Freeing pathfinding library");
@@ -31,23 +30,29 @@ bool ModulePathfinding::CleanUp()
 	{
 		for (int j = 0; j < absGraph.lvlClusters[i].size(); j++)
 		{
-			for (int k = 0; k < absGraph.lvlClusters[i].at(j).clustNodes.size(); k++)
-			{
-				for (int z = 0; z < absGraph.lvlClusters[i].at(j).clustNodes.at(k)->edges.size(); z++)
-				{
-					delete absGraph.lvlClusters[i].at(j).clustNodes.at(k)->edges.at(z);
-					absGraph.lvlClusters[i].at(j).clustNodes.at(k)->edges.at(z) = nullptr;
-				}
-				absGraph.lvlClusters[i].at(j).clustNodes.at(k)->edges.clear();
-
-				delete absGraph.lvlClusters[i].at(j).clustNodes.at(k);
-				absGraph.lvlClusters[i].at(j).clustNodes.at(k) = nullptr;
-			}
 			absGraph.lvlClusters[i].at(j).clustNodes.clear();
 		}
 		absGraph.lvlClusters[i].clear();
 	}
 	absGraph.lvlClusters.clear();
+
+
+
+	for (int i = 0; i < absGraph.nodes.size(); i++)
+	{
+		for (int j = 0; j < absGraph.nodes[i]->edges.size(); j++)
+		{
+			delete absGraph.nodes[i]->edges.at(j);
+			absGraph.nodes[i]->edges.at(j) = nullptr;
+		}
+		absGraph.nodes[i]->edges.clear();
+
+		delete absGraph.nodes[i];
+		absGraph.nodes[i] = nullptr;
+	}
+	absGraph.nodes.clear();
+
+
 
 	generatedPaths.clear();
 	return true;
@@ -72,7 +77,8 @@ void ModulePathfinding::SetMap(uint width, uint height, uchar* data)
 void ModulePathfinding::HPAPreProcessing(int maxLevel)
 {
 	absGraph.PrepareGraph();
-	for (int l = 1; l <= maxLevel; l++)
+
+	for (int l = 2; l <= maxLevel; l++)
 	{
 		absGraph.CreateGraphLvl(l);
 	}
@@ -84,17 +90,24 @@ void HPAGraph::PrepareGraph()
 
 	buildClusters(1);
 	buildEntrances();
+
+	createInterNodes(1);
+	createIntraNodes(1);
 }
 
 void HPAGraph::CreateGraphLvl(int lvl)
 {
-	Entrance* currEntrance;
-	Cluster* c1, * c2;
-	HierNode* n1, * n2;
-	int currLvl = lvl - 1;
-
 	if (this->lvlClusters.size() < lvl)
 		buildClusters(lvl);
+
+	createInterNodes(lvl);
+	createIntraNodes(lvl);
+}
+
+void HPAGraph::createInterNodes(int lvl)
+{
+	Entrance* currEntrance;
+	Cluster* c1, * c2;
 
 	for (uint i = 0; i < entrances.size(); i++)
 	{
@@ -110,28 +123,15 @@ void HPAGraph::CreateGraphLvl(int lvl)
 			if (adjacents(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
 				continue;
 
+			int maxSize = (currEntrance->pos.y + currEntrance->height);
 
-			for (int i = currEntrance->pos.y; i < (currEntrance->pos.y + currEntrance->height); i += NODE_MIN_DISTANCE)
+			for (int i = currEntrance->pos.y; i < maxSize; i += NODE_MIN_DISTANCE)
 			{
-				n1 = NodeExists({ currEntrance->pos.x,i }, c1);
-				if (!n1)
-				{
-					n1 = new HierNode({ currEntrance->pos.x, i });
-					c1->clustNodes.push_back(n1);
-				}
-
-
-				n2 = NodeExists({ currEntrance->pos.x + 1, i }, c2);
-				if (!n2)
-				{
-					n2 = new HierNode({ currEntrance->pos.x + 1, i });
-					c2->clustNodes.push_back(n2);
-				}
-
-
-				n1->edges.push_back(new Edge(n2, 1));
-				n2->edges.push_back(new Edge(n1, 1));
+				BuildInterNode({ currEntrance->pos.x,i }, c1, { currEntrance->pos.x + 1, i }, c2, lvl);
 			}
+			//We make sure that the last spot has a node for path stability
+			BuildInterNode({ currEntrance->pos.x, maxSize - 1 }, c1, { currEntrance->pos.x + 1, maxSize - 1 }, c2, lvl);
+
 		}
 		break;
 		case ADJACENT_DIR::VERTICAL:
@@ -142,35 +142,66 @@ void HPAGraph::CreateGraphLvl(int lvl)
 			if (adjacents(c1, c2, lvl) != ADJACENT_DIR::VERTICAL)
 				continue;
 
-			for (int i = currEntrance->pos.x; i < (currEntrance->pos.x + currEntrance->width); i += NODE_MIN_DISTANCE)
+			int maxSize = (currEntrance->pos.x + currEntrance->width);
+
+			for (int i = currEntrance->pos.x; i < maxSize; i += NODE_MIN_DISTANCE)
 			{
-
-				n1 = NodeExists({ i, currEntrance->pos.y }, c1);
-				if (!n1)
-				{
-					n1 = new HierNode({ i, currEntrance->pos.y });
-					c1->clustNodes.push_back(n1);
-				}
-
-
-				n2 = NodeExists({ i, currEntrance->pos.y + 1 }, c2);
-				if (!n2)
-				{
-					n2 = new HierNode({ i, currEntrance->pos.y + 1 });
-					c2->clustNodes.push_back(n2);
-				}
-
-				n1->edges.push_back(new Edge(n2, 1));
-				n2->edges.push_back(new Edge(n1, 1));
+				BuildInterNode({ i, currEntrance->pos.y }, c1, { i, currEntrance->pos.y + 1 }, c2, lvl);
 			}
+			//We make sure that the last spot has a node for path stability
+			BuildInterNode({ maxSize - 1, currEntrance->pos.y }, c1, { maxSize - 1, currEntrance->pos.y + 1 }, c2, lvl);
+
 		}
 		break;
 		}
 
 	}
+}
 
+void HPAGraph::BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, int lvl)
+{
+	HierNode* n1, * n2;
+
+
+	if(MULTILEVEL_SEARCH)
+	n1 = NodeExists(p1, nullptr);
+	else
+	n1 = NodeExists(p1, c1);
+
+	if (!n1)
+	{
+		n1 = new HierNode(p1);
+		nodes.push_back(n1);
+	}
+
+	if (NodeExists(p1, c1) == nullptr)
+		c1->clustNodes.push_back(n1);
+
+
+
+	if (MULTILEVEL_SEARCH)
+		n2 = NodeExists(p2, nullptr);
+	else
+		n2 = NodeExists(p2, c2);
+
+	if (!n2)
+	{
+		n2 = new HierNode(p2);
+		nodes.push_back(n2);
+	}
+
+	if (NodeExists(p2, c2) == nullptr)
+		c2->clustNodes.push_back(n2);
+
+	CreateEdges(n1, n2, lvl, EDGE_TYPE::INTER);
+
+}
+
+void HPAGraph::createIntraNodes(int lvl)
+{
 	Cluster* clusterIt;
 	float distanceTo = 0;
+	int currLvl = lvl - 1;
 
 	for (int i = 0; i < lvlClusters[currLvl].size(); i++)
 	{
@@ -180,9 +211,11 @@ void HPAGraph::CreateGraphLvl(int lvl)
 		{
 			for (int k = y + 1; k < clusterIt->clustNodes.size(); k++)
 			{
-				distanceTo = App->pathfinding->SimpleAPathfinding(clusterIt->clustNodes[y]->pos, clusterIt->clustNodes[k]->pos);
-				clusterIt->clustNodes[y]->edges.push_back(new Edge(clusterIt->clustNodes[k], distanceTo));
-				clusterIt->clustNodes[k]->edges.push_back(new Edge(clusterIt->clustNodes[y], distanceTo));
+				CreateEdges(clusterIt->clustNodes[y], clusterIt->clustNodes[k], lvl, EDGE_TYPE::INTRA);
+
+				//distanceTo = App->pathfinding->SimpleAPathfinding(clusterIt->clustNodes[y]->pos, clusterIt->clustNodes[k]->pos);
+				//clusterIt->clustNodes[y]->edges.push_back(new Edge(clusterIt->clustNodes[k], distanceTo));
+				//clusterIt->clustNodes[k]->edges.push_back(new Edge(clusterIt->clustNodes[y], distanceTo));
 			}
 		}
 	}
@@ -190,13 +223,68 @@ void HPAGraph::CreateGraphLvl(int lvl)
 
 HierNode* HPAGraph::NodeExists(iPoint pos, Cluster* c)
 {
-	for (int i = 0; i < c->clustNodes.size(); i++)
+	if (c == nullptr)
 	{
-		if (pos == c->clustNodes[i]->pos)
-			return c->clustNodes[i];
+		for (int i = 0; i < nodes.size(); i++)
+		{
+			if (pos == nodes[i]->pos)
+				return nodes[i];
+		}
+	}
+	else
+	{
+		for (int i = 0; i < c->clustNodes.size(); i++)
+		{
+			if (pos == c->clustNodes[i]->pos)
+				return c->clustNodes[i];
+		}
 	}
 
 	return nullptr;
+}
+
+void HPAGraph::CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
+{
+	float distanceTo = 1.f;
+
+
+	if (!EdgeExists(n1, n2, lvl, type))
+	{
+		if (type == EDGE_TYPE::INTRA)
+		{
+			distanceTo = App->pathfinding->SimpleAPathfinding(n1->pos, n2->pos);
+		}
+
+		n1->edges.push_back(new Edge(n2, distanceTo, lvl, type));
+	}
+
+	if (!EdgeExists(n2, n1, lvl, type))
+	{
+		if (type == EDGE_TYPE::INTRA)
+		{
+			if (distanceTo == 1)
+				distanceTo = App->pathfinding->SimpleAPathfinding(n1->pos, n2->pos);
+		}
+
+		n2->edges.push_back(new Edge(n1, distanceTo, lvl, type));
+	}
+
+
+
+}
+
+bool HPAGraph::EdgeExists(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
+{
+	for (int i = 0; i < n1->edges.size(); i++)
+	{
+		if (n1->edges[i]->dest == n2 && n1->edges[i]->type == type)
+		{
+			n1->edges[i]->UpdateLvl(lvl);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void HPAGraph::buildEntrances()
@@ -332,11 +420,6 @@ void HPAGraph::buildClusters(int lvl)
 	this->lvlClusters.push_back(clusterVector);
 }
 
-void HPAGraph::AddLevelToGraph(int lvl)
-{
-
-}
-
 HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 {
 	BROFILER_CATEGORY("Insert Node", Profiler::Color::Cornsilk);
@@ -370,11 +453,17 @@ void HPAGraph::ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl)
 	float distanceTo = 0;
 	for (int i = 0; i < c->clustNodes.size(); i++)
 	{
-		//distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos, PATH_TYPE::CALCULATE_COST);
-		distanceTo = node->pos.DistanceTo(c->clustNodes[i]->pos);
+		if (i == 0)
+		{
+			distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos);
 
-		node->edges.push_back(new Edge(c->clustNodes[i], distanceTo));
-		c->clustNodes[i]->edges.push_back(new Edge(node, distanceTo));
+			if (distanceTo == -1)
+				break;
+		}
+		distanceTo = node->pos.OctileDistance(c->clustNodes[i]->pos);
+
+		node->edges.push_back(new Edge(c->clustNodes[i], distanceTo, lvl, EDGE_TYPE::INTRA));
+		c->clustNodes[i]->edges.push_back(new Edge(node, distanceTo, lvl, EDGE_TYPE::INTRA));
 	}
 
 }
@@ -416,23 +505,40 @@ void HPAGraph::deleteNode(HierNode* toDelete, int lvl)
 	{
 		for (int i = 0; i < c->clustNodes.size(); i++)
 		{
+			for (int j = 0; j < c->clustNodes[i]->edges.size(); j++)
+			{
+				if (c->clustNodes[i]->edges[j]->dest == toDelete)
+				{
+					c->clustNodes[i]->edges[j]->dest = nullptr;
+					delete c->clustNodes[i]->edges[j];
+
+					c->clustNodes[i]->edges.erase(c->clustNodes[i]->edges.begin() + j);
+					break;
+				}
+			}
+		}
+
+		for (int i = 0; i < c->clustNodes.size(); i++)
+		{
 			if (c->clustNodes[i]->pos == toDelete->pos)
 			{
-				for (int z = 0; z < toDelete->edges.size(); z++)
+				for (int j = 0; j < toDelete->edges.size(); j++)
 				{
-					delete toDelete->edges.at(z);
-					c->clustNodes[i]->edges.at(z) = nullptr;
+					c->clustNodes[i]->edges[j]->dest = nullptr;
+					delete c->clustNodes[i]->edges[j];
+
 				}
-				toDelete->edges.clear();
+
 				c->clustNodes.erase(c->clustNodes.begin() + i);
+				toDelete->edges.clear();
+				delete toDelete;
 				break;
 			}
-
 		}
 	}
 }
 
-Edge::Edge(HierNode* dest, int distanceTo) : dest(dest), moveCost(distanceTo)
+Edge::Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type) : dest(dest), moveCost(distanceTo), lvl(lvl), type(type)
 {}
 
 Entrance::Entrance() : pos{ 0,0 }, width(0), height(0), dir(ADJACENT_DIR::DIR_NONE)
@@ -442,7 +548,7 @@ Entrance::Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir)
 	: pos(pos), width(width), height(height), dir(dir)
 {}
 
-HierNode::HierNode(iPoint pos) : PathNode(-1, -1, pos, nullptr, -1, -1, false)
+HierNode::HierNode(iPoint pos) : PathNode(-1.f, -1.f, pos, nullptr, -1, -1, false)
 {}
 
 HierNode::HierNode(iPoint pos, bool tmp) : PathNode(g, h, pos, nullptr, -1, -1, false)
@@ -494,7 +600,7 @@ uchar ModulePathfinding::GetTileAt(const iPoint& pos) const
 }
 
 
-PathNode::PathNode() : g(-1), h(-1), pos{ -1, -1 }, parent(NULL), is_Diagonal(false), myDirection(0), parentDir(0)
+PathNode::PathNode() : g(-1.f), h(-1.f), pos{ -1, -1 }, parent(NULL), is_Diagonal(false), myDirection(0), parentDir(0)
 {}
 
 PathNode::PathNode(float g, float h, const iPoint& pos, PathNode* parent, int parentDir, int myDir, bool isdiagonal) :
@@ -514,41 +620,41 @@ uint PathNode::FindWalkableAdjacents(std::vector<PathNode>& list_to_fill)
 	// north
 	cell.create(pos.x, pos.y + 1);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, false));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, false));
 
 	// south
 	cell.create(pos.x, pos.y - 1);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, false));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, false));
 
 	// east
 	cell.create(pos.x + 1, pos.y);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, false));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, false));
 
 	// west
 	cell.create(pos.x - 1, pos.y);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, false));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, false));
 
 	cell.create(pos.x + 1, pos.y + 1);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, true));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, true));
 
 	// south
 	cell.create(pos.x + 1, pos.y - 1);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, true));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, true));
 
 	// east
 	cell.create(pos.x - 1, pos.y + 1);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, true));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, true));
 
 	// west
 	cell.create(pos.x - 1, pos.y - 1);
 	if (App->pathfinding->IsWalkable(cell))
-		list_to_fill.push_back(PathNode(-1, -1, cell, this, myDirection, 0, true));
+		list_to_fill.push_back(PathNode(-1.f, -1.f, cell, this, myDirection, 0, true));
 
 	return list_to_fill.size();
 }
@@ -557,14 +663,14 @@ float PathNode::CalculateF(const iPoint& destination)
 {
 	if (is_Diagonal)
 	{
-		g = parent->g + 1.41;
+		g = parent->g + 1.41f;
 	}
 	else
 	{
-		g = parent->g + 1;
+		g = parent->g + 1.f;
 	}
 
-	h = pos.DistanceTo(destination);
+	h = pos.OctileDistance(destination);
 
 	return g + h;
 }
@@ -575,15 +681,22 @@ float PathNode::Score() const
 	return g + h;
 }
 
-uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill)
+uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl)
 {
 	int edgeNum = edges.size();
 	HierNode* curr = nullptr;
+	Edge* currEdge = nullptr;
 
 	for (int i = 0; i < edgeNum; i++)
 	{
-		curr = edges[i]->dest;
-		list_to_fill.push_back(HierNode(edges[i]->moveCost + this->g, curr->pos, this, myDirection, curr->parentDir, curr->edges));
+		currEdge = edges[i];
+
+		if (!MULTILEVEL_SEARCH || (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl == lvl || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl >= lvl))
+		{
+			curr = currEdge->dest;
+			list_to_fill.push_back(HierNode(currEdge->moveCost + this->g, curr->pos, this, myDirection, curr->parentDir, curr->edges));
+		}
+
 	}
 
 	return list_to_fill.size();
@@ -591,7 +704,7 @@ uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill)
 
 float HierNode::CalculateF(const iPoint& destination)
 {
-	h = pos.DistanceTo(destination);
+	h = pos.OctileDistance(destination);
 
 	return g + h;
 }
@@ -619,17 +732,15 @@ PATH_TYPE ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& dest
 		if (!n1 || !n2)
 			return ret;
 
-		n1->h = n1->pos.DistanceTo(n2->pos);
+		n1->h = n1->pos.OctileDistance(n2->pos);
 
 		//Abs Path
-		HPAPathfinding(*n1, n2->pos, 1);
+		HPAPathfinding(*n1, n2->pos, maxLvl);
 
 		if (toDeleteN1)
 			absGraph.deleteNode((HierNode*)n1, maxLvl);
 		if (toDeleteN2)
 			absGraph.deleteNode((HierNode*)n2, maxLvl);
-
-		HPAPostProcessing(&last_path, lvl);
 
 		ret = PATH_TYPE::ABSTRACT;
 
@@ -652,19 +763,19 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 {
 	BROFILER_CATEGORY("HPA Algorithm", Profiler::Color::AliceBlue);
 
-	std::multimap<int, HierNode> open;
+	std::multimap<float, HierNode> open;
 	std::vector<HierNode> closed;
 
-	open.insert(std::pair<int, HierNode>(0, origin));
+	open.insert(std::pair<float, HierNode>(0.f, origin));
 
 	//Analize the current
 	HierNode* curr = nullptr;
-	std::multimap<int, HierNode>::iterator lowest;
+	std::multimap<float, HierNode>::iterator lowest;
 
 	// Get New Nodes
 	uint limit = 0;
 	std::vector<HierNode> adjList;
-	std::multimap<int, HierNode>::iterator it2;
+	std::multimap<float, HierNode>::iterator it2;
 
 	while (open.empty() == false)
 	{
@@ -691,7 +802,7 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 			return 0;
 		}
 
-		limit = curr->FindWalkableAdjacents(adjList);
+		limit = curr->FindWalkableAdjacents(adjList, lvl);
 
 		for (uint i = 0; i < limit; i++)
 		{
@@ -701,14 +812,14 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 				adjList[i].CalculateF(destination);
 				if (it2 == open.end())
 				{
-					open.insert(std::pair<int, HierNode>(adjList[i].Score(), adjList[i]));
+					open.insert(std::pair<float, HierNode>(adjList[i].Score(), adjList[i]));
 				}
 				else
 				{
 					if (adjList[i].Score() < it2->second.Score())
 					{
 						open.erase(Find(adjList[i].pos, &open));
-						open.insert(std::pair<int, HierNode>(adjList[i].Score(), adjList[i]));
+						open.insert(std::pair<float, HierNode>(adjList[i].Score(), adjList[i]));
 					}
 				}
 			}
@@ -724,19 +835,19 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 
 	last_path.clear();
 
-	std::multimap<int, PathNode> open;
+	std::multimap<float, PathNode> open;
 	std::vector<PathNode> closed;
 
-	open.insert(std::pair<int, PathNode>(0, PathNode(0, origin.DistanceTo(destination), origin, nullptr, 0, 0)));
+	open.insert(std::pair<float, PathNode>(0.f, PathNode(0.f, origin.OctileDistance(destination), origin, nullptr, 0, 0)));
 
 	//Analize the current
 	PathNode* curr = nullptr;
-	std::multimap<int, PathNode>::iterator lowest;
+	std::multimap<float, PathNode>::iterator lowest;
 
 	// Get New Nodes
 	uint limit = 0;
 	std::vector<PathNode> adjList;
-	std::multimap<int, PathNode>::iterator it2;
+	std::multimap<float, PathNode>::iterator it2;
 
 	while (open.empty() == false)
 	{
@@ -772,20 +883,22 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 				adjList[i].CalculateF(destination);
 				if (it2 == open.end())
 				{
-					open.insert(std::pair<int, PathNode>(adjList[i].Score(), adjList[i]));
+					open.insert(std::pair<float, PathNode>(adjList[i].Score(), adjList[i]));
 				}
 				else
 				{
 					if (adjList[i].g < it2->second.g)
 					{
 						open.erase(Find(adjList[i].pos, &open));
-						open.insert(std::pair<int, PathNode>(adjList[i].Score(), adjList[i]));
+						open.insert(std::pair<float, PathNode>(adjList[i].Score(), adjList[i]));
 					}
 				}
 			}
 		}
 		adjList.clear();
 	}
+
+	return -1;
 }
 
 //Entities will call this to request their path
@@ -832,10 +945,13 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 	std::vector <iPoint>* generatedPath = nullptr;
 	iPoint currPos = { -1, -1 };
 	iPoint startPos = { -1, -1 };
+
 	int from = -1;
 	int maxPath = lvl * CLUSTER_SIZE_LVL;
 	int pathSize = absPath->size();
+	PATH_DIR dir = PATH_DIR::DIR_NONE;
 
+	Cluster* fromC = nullptr;
 
 	for (int i = 0; i < pathSize; i)
 	{
@@ -846,17 +962,25 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 		{
 			startPos = currPos;
 			from = i;
+			fromC = absGraph.determineCluster(startPos, lvl);
 			i++;
 			continue;
 		}
 
-		//Three Conditions to make path:
-			//Not be a Straight Path 
+		//Two Conditions to make path:
 			//Check that Distance is not greater than Cluster Size
 			//Not be the last node
-		if (!IsStraightPath(startPos, currPos) || startPos.DistanceTo(currPos) > maxPath || (i == pathSize - 1 && pathSize > 0))
+		if (fromC != absGraph.determineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
 		{
-			SimpleAPathfinding(startPos, currPos);
+
+			dir = IsStraightPath(startPos, currPos);
+
+			if (dir != PATH_DIR::DIR_NONE && !DoStraightPath(dir, pathToFill, startPos, currPos))
+			{
+				SimpleAPathfinding(startPos, currPos);
+			}
+			else
+				SimpleAPathfinding(startPos, currPos);
 
 			generatedPath = &last_path;
 
@@ -881,20 +1005,192 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 	return generatedPath;
 }
 
-bool ModulePathfinding::IsStraightPath(iPoint from, iPoint to)
+PATH_DIR ModulePathfinding::IsStraightPath(iPoint from, iPoint to)
 {
-	if (from.x == to.x || from.y == to.y || abs(from.x - to.x) == abs(from.y - to.y))
-		return true;
+	if (from.x == to.x)
+	{
+		if (from.y > to.y)
+			return PATH_DIR::DIR_VER_NEG;
+		else
+			return PATH_DIR::DIR_VER_POS;
+	}
 
-	return false;
+	if (from.y == to.y)
+	{
+		if (from.x > to.x)
+			return PATH_DIR::DIR_HOR_NEG;
+		else
+			return PATH_DIR::DIR_HOR_POS;
+	}
+
+
+	if (abs(from.x - to.x) == abs(from.y - to.y))
+	{
+		if (from.x > to.x && from.y > to.y)
+			return PATH_DIR::DIR_DIA_XY_NEG;
+
+		else if (from.x < to.x && from.y < to.y)
+			return PATH_DIR::DIR_DIA_XY_POS;
+
+		else if (from.x > to.x && from.y < to.y)
+			return PATH_DIR::DIR_DIA_X_NEG_Y_POS;
+
+		else if (from.x > to.x && from.y - to.y)
+			return PATH_DIR::DIR_DIA_Y_NEG_X_POS;
+	}
+
+
+	return PATH_DIR::DIR_NONE;
 }
 
+bool ModulePathfinding::DoStraightPath(PATH_DIR dir, std::vector<iPoint>* toFill, iPoint startPos, iPoint currPos)
+{
+	iPoint curr = { -1 ,-1 };
+	last_path.clear();
+
+	switch (dir)
+	{
+	case PATH_DIR::DIR_HOR_POS:
+	{
+		for (int i = startPos.x; i <= currPos.x; i++)
+		{
+			curr = { i, startPos.y };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+
+	}
+	break;
+	case PATH_DIR::DIR_HOR_NEG:
+	{
+		for (int i = startPos.x; i >= currPos.x; i--)
+		{
+			curr = { i, startPos.y };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+	}
+	break;
+	case PATH_DIR::DIR_VER_POS:
+	{
+		for (int i = startPos.y; i <= currPos.y; i++)
+		{
+			curr = { startPos.x, i };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+	}
+	break;
+	case PATH_DIR::DIR_VER_NEG:
+	{
+		for (int i = startPos.y; i >= currPos.y; i--)
+		{
+			curr = { startPos.x, i };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+	}
+	break;
+	case PATH_DIR::DIR_DIA_XY_POS:
+	{
+		for (int i = 0; startPos.x + i >= currPos.x; i++)
+		{
+			curr = { startPos.x + i, startPos.y + i };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+	}
+	break;
+	case PATH_DIR::DIR_DIA_XY_NEG:
+	{
+		for (int i = 0; startPos.x + i <= currPos.x; i--)
+		{
+			curr = { startPos.x + i, startPos.y + i };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+	}
+	break;
+	case PATH_DIR::DIR_DIA_X_NEG_Y_POS:
+	{
+		for (int i = 0; startPos.x + i <= currPos.x; i--)
+		{
+			curr = { startPos.x + i, startPos.y - i };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+	}
+	break;
+	case PATH_DIR::DIR_DIA_Y_NEG_X_POS:
+	{
+		for (int i = 0; startPos.x + i >= currPos.x; i++)
+		{
+			curr = { startPos.x + i, startPos.y - i };
+
+			if (IsWalkable(curr))
+				last_path.push_back(curr);
+			else
+			{
+				last_path.clear();
+				return false;
+			}
+		}
+	}
+	break;
+	}
+
+	return true;
+}
+
+
 //Fins for A* MultiMap
-std::multimap<int, PathNode>::iterator ModulePathfinding::Find(iPoint point, std::multimap<int, PathNode>* map)
+std::multimap<float, PathNode>::iterator ModulePathfinding::Find(iPoint point, std::multimap<float, PathNode>* map)
 {
 	BROFILER_CATEGORY("A* Find", Profiler::Color::Azure);
 
-	std::multimap<int, PathNode>::iterator iterator = map->begin();
+	std::multimap<float, PathNode>::iterator iterator = map->begin();
 
 	int size = map->size();
 
@@ -911,11 +1207,11 @@ std::multimap<int, PathNode>::iterator ModulePathfinding::Find(iPoint point, std
 }
 
 //Fins for HPA MultiMap
-std::multimap<int, HierNode>::iterator ModulePathfinding::Find(iPoint point, std::multimap<int, HierNode>* map)
+std::multimap<float, HierNode>::iterator ModulePathfinding::Find(iPoint point, std::multimap<float, HierNode>* map)
 {
 	BROFILER_CATEGORY("HPA Find", Profiler::Color::MediumBlue);
 
-	std::multimap<int, HierNode>::iterator iterator = map->begin();
+	std::multimap<float, HierNode>::iterator iterator = map->begin();
 
 	int size = map->size();
 

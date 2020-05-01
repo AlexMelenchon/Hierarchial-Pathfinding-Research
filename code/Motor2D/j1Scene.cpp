@@ -31,11 +31,11 @@ bool j1Scene::Awake()
 // Called before the first frame
 bool j1Scene::Start()
 {
-	if(App->map->Load("iso_walk.tmx") == true)
+	if (App->map->Load("iso_walk.tmx") == true)
 	{
 		int w, h;
 		uchar* data = NULL;
-		if(App->map->CreateWalkabilityMap(w, h, &data))
+		if (App->map->CreateWalkabilityMap(w, h, &data))
 			App->pathfinding->SetMap(w, h, data);
 
 		RELEASE_ARRAY(data);
@@ -62,13 +62,13 @@ bool j1Scene::PreUpdate()
 
 
 
-	if(App->input->GetMouseButtonDown(SDL_BUTTON_LEFT) == KEY_DOWN)
+	if (App->input->GetMouseButtonDown(SDL_BUTTON_LEFT) == KEY_DOWN)
 	{
-		if(origin_selected == true)
+		if (origin_selected == true)
 		{
 			BROFILER_CATEGORY("HPA", Profiler::Color::DarkGreen);
 			absPath.clear();
-			App->pathfinding->CreatePath(origin, p,1, nullptr);
+			App->pathfinding->CreatePath(origin, p, 2, nullptr);
 			origin_selected = false;
 		}
 		else
@@ -96,22 +96,22 @@ bool j1Scene::PreUpdate()
 // Called each loop iteration
 bool j1Scene::Update(float dt)
 {
-	if(App->input->GetKey(SDL_SCANCODE_L) == KEY_DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_L) == KEY_DOWN)
 		App->LoadGame("save_game.xml");
 
-	if(App->input->GetKey(SDL_SCANCODE_S) == KEY_DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_S) == KEY_DOWN)
 		App->SaveGame("save_game.xml");
 
-	if(App->input->GetKey(SDL_SCANCODE_UP) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_UP) == KEY_REPEAT)
 		App->render->camera.y += 750 * dt;
 
-	if(App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_REPEAT)
 		App->render->camera.y -= 750 * dt;
 
-	if(App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
 		App->render->camera.x += 750 * dt;
 
-	if(App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
 		App->render->camera.x -= 750 * dt;
 
 	if (App->input->GetKey(SDL_SCANCODE_F2) == KEY_DOWN)
@@ -123,10 +123,10 @@ bool j1Scene::Update(float dt)
 	App->input->GetMousePosition(x, y);
 	iPoint map_coordinates = App->map->WorldToMap(x - App->render->camera.x, y - App->render->camera.y);
 	p2SString title("Map:%dx%d Tiles:%dx%d Tilesets:%d Tile:%d,%d",
-					App->map->data.width, App->map->data.height,
-					App->map->data.tile_width, App->map->data.tile_height,
-					App->map->data.tilesets.count(),
-					map_coordinates.x, map_coordinates.y);
+		App->map->data.width, App->map->data.height,
+		App->map->data.tile_width, App->map->data.tile_height,
+		App->map->data.tilesets.count(),
+		map_coordinates.x, map_coordinates.y);
 
 	App->win->SetTitle(title.GetString());
 
@@ -139,26 +139,26 @@ bool j1Scene::Update(float dt)
 	App->render->Blit(debug_tex, p.x, p.y);
 
 
-	if (App->input->GetKey(SDL_SCANCODE_F3) == KEY_DOWN )
+	if (App->input->GetKey(SDL_SCANCODE_F3) == KEY_DOWN)
 	{
-		 App->pathfinding->RequestPath(nullptr, &absPath);
-		 updatePathTimer = 0.f;
-	}
-	
-	
-	if (absPath.size() > 0)
-	for (std::vector<iPoint>::iterator it = absPath.begin(); it != absPath.end(); ++it)
-	{
-		iPoint pos = App->map->MapToWorld(it->x, it->y);
-		App->render->Blit(debug_tex, pos.x, pos.y);
+		App->pathfinding->RequestPath(nullptr, &absPath);
+		updatePathTimer = 0.f;
 	}
 
-	if(entrances)
-	for (int i = 0; i < App->pathfinding->absGraph.entrances.size(); i++)
-	{
-		iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.entrances[i].pos.x, App->pathfinding->absGraph.entrances[i].pos.y);
-		App->render->Blit(debug_tex, pos.x, pos.y);
-	}
+
+	if (absPath.size() > 0)
+		for (std::vector<iPoint>::iterator it = absPath.begin(); it != absPath.end(); ++it)
+		{
+			iPoint pos = App->map->MapToWorld(it->x, it->y);
+			App->render->Blit(debug_tex, pos.x, pos.y);
+		}
+
+	if (entrances)
+		for (int i = 0; i < App->pathfinding->absGraph.entrances.size(); i++)
+		{
+			iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.entrances[i].pos.x, App->pathfinding->absGraph.entrances[i].pos.y);
+			App->render->Blit(debug_tex, pos.x, pos.y);
+		}
 
 	for (int i = 0; i < App->pathfinding->absGraph.lvlClusters[1].size(); i++)
 	{
@@ -182,7 +182,7 @@ bool j1Scene::PostUpdate()
 {
 	bool ret = true;
 
-	if(App->input->GetKey(SDL_SCANCODE_ESCAPE) == KEY_DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_ESCAPE) == KEY_DOWN)
 		ret = false;
 
 	return ret;

@@ -25,10 +25,36 @@ enum class PATH_TYPE
 
 };
 
+enum class PATH_DIR
+{
+	DIR_NONE = -1,
+
+	DIR_HOR_POS,
+	DIR_HOR_NEG,
+
+	DIR_VER_POS,
+	DIR_VER_NEG,
+
+	DIR_DIA_XY_POS,
+	DIR_DIA_XY_NEG,
+	DIR_DIA_X_NEG_Y_POS,
+	DIR_DIA_Y_NEG_X_POS,
+};
+
+enum class EDGE_TYPE
+{
+	NO_YPE = -1,
+
+	INTRA,
+	INTER
+
+};
+
 //HPA*-------------------------------------------
 #define NODE_MIN_DISTANCE 5
 #define CLUSTER_SIZE_LVL 5
 #define MAX_LEVELS 2
+#define MULTILEVEL_SEARCH false
 
 class HierNode;
 class Entity;
@@ -76,10 +102,18 @@ struct Entrance
 //Connection between nodes
 struct Edge
 {
-	Edge(HierNode* dest, int distanceTo);
+	Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type);
+
+	void UpdateLvl(int lvl)
+	{
+		this->lvl = lvl;
+	}
 
 	HierNode* dest;
 	float moveCost;
+
+	int lvl;
+	EDGE_TYPE type;
 
 };
 
@@ -90,20 +124,26 @@ struct HPAGraph
 	//Graph Storage
 	std::vector <std::vector<Cluster>> lvlClusters;
 	std::vector <Entrance> entrances;
+	std::vector <HierNode*> nodes;
 
 	//PreProcessing
 	void PrepareGraph();
 	void CreateGraphLvl(int lvl);
-	void AddLevelToGraph(int lvl);
 
 	void buildClusters(int lvl);
 	void buildEntrances();
 	void createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
+	void createInterNodes(int lvl);
+	void BuildInterNode(iPoint n1,Cluster* c1, iPoint n2, Cluster* c2, int lvl);
+	void createIntraNodes(int lvl);
 
 
 	//Utility
 	ADJACENT_DIR adjacents(Cluster* c1, Cluster* c2, int lvl);
 	HierNode* NodeExists(iPoint pos, Cluster* lvl);
+	void CreateEdges(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type);
+	bool EdgeExists(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type);
+
 	Cluster* determineCluster(iPoint nodePos, int lvl, Cluster* firstCheck = nullptr);
 
 	//Node Insertion
@@ -159,7 +199,7 @@ public:
 	HierNode(float g, const iPoint& pos, PathNode* parent,int myDir, int parentdir, std::vector<Edge*> edges);
 
 	float CalculateF(const iPoint& destination);
-	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill);
+	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl);
 
 	std::vector <Edge*> edges;
 };
@@ -199,14 +239,15 @@ private:
 	void HPAPreProcessing(int maxLevel);
 
 	//Pathfinding FIND Utilities
-	std::multimap<int, PathNode>::iterator Find(iPoint point, std::multimap<int, PathNode>* map);
-	std::multimap<int, HierNode>::iterator Find(iPoint point, std::multimap<int, HierNode>* map);
+	std::multimap<float, PathNode>::iterator Find(iPoint point, std::multimap<float, PathNode>* map);
+	std::multimap<float, HierNode>::iterator Find(iPoint point, std::multimap<float, HierNode>* map);
 	int FindV(iPoint point, std::vector<PathNode>* vec);
 	int FindV(iPoint point, std::vector<HierNode>* vec);
 
 	//HPA Utilities
 	bool RefineAndSmoothPath(std::vector<iPoint>* absPath, int lvl, std::vector<iPoint>* refinedPath);
-	bool IsStraightPath(iPoint from, iPoint to);
+	PATH_DIR IsStraightPath(iPoint from, iPoint to);
+	bool DoStraightPath(PATH_DIR dir, std::vector<iPoint>* toFill, iPoint startPos, iPoint currPos);
 
 
 public:
@@ -215,6 +256,7 @@ public:
 
 	//This should be private, it's in public for debug purposes
 	HPAGraph absGraph;
+
 private:
 
 	uchar* walkabilityMap;

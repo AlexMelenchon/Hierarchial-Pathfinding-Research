@@ -8,6 +8,7 @@
 #include "p2Defs.h"
 #include <math.h>
 
+
 template<class TYPE>
 class p2Point
 {
@@ -39,7 +40,7 @@ public:
 	}
 
 	// Math ------------------------------------------------
-	p2Point operator -(const p2Point &v) const
+	p2Point operator -(const p2Point& v) const
 	{
 		p2Point r;
 
@@ -49,7 +50,7 @@ public:
 		return(r);
 	}
 
-	p2Point operator + (const p2Point &v) const
+	p2Point operator + (const p2Point& v) const
 	{
 		p2Point r;
 
@@ -81,7 +82,7 @@ public:
 	}
 
 
-	const p2Point& operator -=(const p2Point &v)
+	const p2Point& operator -=(const p2Point& v)
 	{
 		x -= v.x;
 		y -= v.y;
@@ -89,7 +90,7 @@ public:
 		return(*this);
 	}
 
-	const p2Point& operator +=(const p2Point &v)
+	const p2Point& operator +=(const p2Point& v)
 	{
 		x += v.x;
 		y += v.y;
@@ -151,7 +152,7 @@ public:
 		TYPE fx = x - v.x;
 		TYPE fy = y - v.y;
 
-		return sqrtf((fx*fx) + (fy*fy));
+		return sqrtf((fx * fx) + (fy * fy));
 	}
 
 	TYPE DistanceNoSqrt(const p2Point& v) const
@@ -159,7 +160,16 @@ public:
 		TYPE fx = x - v.x;
 		TYPE fy = y - v.y;
 
-		return (fx*fx) + (fy*fy);
+		return round((fx * fx) + (fy * fy));
+	}
+
+	float OctileDistance(const p2Point& v) const
+	{
+		int dx = abs(v.x - x);
+		int dy = abs(v.y - y);
+
+
+		return  max(dx, dy) + (0.41f) * min(dx, dy);
 	}
 
 	TYPE DistanceManhattan(const p2Point& v) const
