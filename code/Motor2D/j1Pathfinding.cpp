@@ -26,6 +26,7 @@ bool ModulePathfinding::CleanUp()
 	//HPA-----------------------------------------
 	absGraph.entrances.clear();
 
+	//Cluster Clear
 	for (int i = 0; i < absGraph.lvlClusters.size(); i++)
 	{
 		for (int j = 0; j < absGraph.lvlClusters[i].size(); j++)
@@ -37,7 +38,7 @@ bool ModulePathfinding::CleanUp()
 	absGraph.lvlClusters.clear();
 
 
-
+	//Nodes Clear
 	for (int i = 0; i < absGraph.nodes.size(); i++)
 	{
 		for (int j = 0; j < absGraph.nodes[i]->edges.size(); j++)
@@ -76,34 +77,46 @@ void ModulePathfinding::SetMap(uint width, uint height, uchar* data)
 
 void ModulePathfinding::HPAPreProcessing(int maxLevel)
 {
+	if (maxLevel <= 1)
+		return;
+
+	//Prepares Entrances & the 1st level of the graph
 	absGraph.PrepareGraph();
 
+	//Creates the rest of the graph levels
 	for (int l = 2; l <= maxLevel; l++)
 	{
 		absGraph.CreateGraphLvl(l);
 	}
 }
 
+//Prepares Entrances & the 1st level of the graph
 void HPAGraph::PrepareGraph()
 {
 	entrances.clear();
 
+	//Build the first level clusters & entrances
 	buildClusters(1);
 	buildEntrances();
 
+	//Node creation-----
 	createInterNodes(1);
 	createIntraNodes(1);
 }
 
 void HPAGraph::CreateGraphLvl(int lvl)
 {
+
+	//If we don't have clusters for the level, we create them
 	if (this->lvlClusters.size() < lvl)
 		buildClusters(lvl);
 
+	//Node creation-----
 	createInterNodes(lvl);
 	createIntraNodes(lvl);
 }
 
+//Creates the connections between adjacent nodes of diferent clusters
 void HPAGraph::createInterNodes(int lvl)
 {
 	Entrance* currEntrance;
@@ -117,18 +130,23 @@ void HPAGraph::createInterNodes(int lvl)
 		{
 		case ADJACENT_DIR::LATERAL:
 		{
-			c1 = determineCluster(currEntrance->pos, lvl);
-			c2 = determineCluster({ currEntrance->pos.x + 1, currEntrance->pos.y }, lvl);
 
-			if (adjacents(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
+			//First of all we check if the clusters are adjacents
+			c1 = DetermineCluster(currEntrance->pos, lvl);
+			c2 = DetermineCluster({ currEntrance->pos.x + 1, currEntrance->pos.y }, lvl);
+
+			if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
 				continue;
 
+
+			//Build the max. number of nodes that can we built based on the cluster size & the min distance we established
 			int maxSize = (currEntrance->pos.y + currEntrance->height);
 
 			for (int i = currEntrance->pos.y; i < maxSize; i += NODE_MIN_DISTANCE)
 			{
 				BuildInterNode({ currEntrance->pos.x,i }, c1, { currEntrance->pos.x + 1, i }, c2, lvl);
 			}
+
 			//We make sure that the last spot has a node for path stability
 			BuildInterNode({ currEntrance->pos.x, maxSize - 1 }, c1, { currEntrance->pos.x + 1, maxSize - 1 }, c2, lvl);
 
@@ -136,18 +154,22 @@ void HPAGraph::createInterNodes(int lvl)
 		break;
 		case ADJACENT_DIR::VERTICAL:
 		{
-			c1 = determineCluster(currEntrance->pos, lvl);
-			c2 = determineCluster({ currEntrance->pos.x, currEntrance->pos.y + 1 }, lvl);
+			//First of all we check if the clusters are adjacents
+			c1 = DetermineCluster(currEntrance->pos, lvl);
+			c2 = DetermineCluster({ currEntrance->pos.x, currEntrance->pos.y + 1 }, lvl);
 
-			if (adjacents(c1, c2, lvl) != ADJACENT_DIR::VERTICAL)
+			if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::VERTICAL)
 				continue;
 
+
+			//Build the max. number of nodes that can we built based on the cluster size & the min distance we established
 			int maxSize = (currEntrance->pos.x + currEntrance->width);
 
 			for (int i = currEntrance->pos.x; i < maxSize; i += NODE_MIN_DISTANCE)
 			{
 				BuildInterNode({ i, currEntrance->pos.y }, c1, { i, currEntrance->pos.y + 1 }, c2, lvl);
 			}
+
 			//We make sure that the last spot has a node for path stability
 			BuildInterNode({ maxSize - 1, currEntrance->pos.y }, c1, { maxSize - 1, currEntrance->pos.y + 1 }, c2, lvl);
 
@@ -158,31 +180,30 @@ void HPAGraph::createInterNodes(int lvl)
 	}
 }
 
+//Builds an interNode
 void HPAGraph::BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, int lvl)
 {
 	HierNode* n1, * n2;
 
 
-	if(MULTILEVEL_SEARCH)
+	//First of all, we check if the node currently exists
 	n1 = NodeExists(p1, nullptr);
-	else
-	n1 = NodeExists(p1, c1);
 
+	//If it doesn't exist, create it
 	if (!n1)
 	{
 		n1 = new HierNode(p1);
 		nodes.push_back(n1);
 	}
 
+	//If doesn't exist in the current cluster, introduce it
 	if (NodeExists(p1, c1) == nullptr)
 		c1->clustNodes.push_back(n1);
 
 
 
-	if (MULTILEVEL_SEARCH)
-		n2 = NodeExists(p2, nullptr);
-	else
-		n2 = NodeExists(p2, c2);
+	//Repeat the process for the second node----
+	n2 = NodeExists(p2, nullptr);
 
 	if (!n2)
 	{
@@ -193,10 +214,11 @@ void HPAGraph::BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, in
 	if (NodeExists(p2, c2) == nullptr)
 		c2->clustNodes.push_back(n2);
 
-	CreateEdges(n1, n2, lvl, EDGE_TYPE::INTER);
 
+	CreateEdges(n1, n2, lvl, EDGE_TYPE::INTER);
 }
 
+//Creates the connections between nodes in the same cluster
 void HPAGraph::createIntraNodes(int lvl)
 {
 	Cluster* clusterIt;
@@ -243,13 +265,16 @@ HierNode* HPAGraph::NodeExists(iPoint pos, Cluster* c)
 	return nullptr;
 }
 
+//Creates the connection between nodes
 void HPAGraph::CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 {
 	float distanceTo = 1.f;
 
-
+	//First check if already exists
 	if (!EdgeExists(n1, n2, lvl, type))
 	{
+
+		//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
 		if (type == EDGE_TYPE::INTRA)
 		{
 			distanceTo = App->pathfinding->SimpleAPathfinding(n1->pos, n2->pos);
@@ -258,6 +283,7 @@ void HPAGraph::CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 		n1->edges.push_back(new Edge(n2, distanceTo, lvl, type));
 	}
 
+	//Repeat the process for the second node----
 	if (!EdgeExists(n2, n1, lvl, type))
 	{
 		if (type == EDGE_TYPE::INTRA)
@@ -273,6 +299,7 @@ void HPAGraph::CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 
 }
 
+//Checks if an Edge exists
 bool HPAGraph::EdgeExists(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 {
 	for (int i = 0; i < n1->edges.size(); i++)
@@ -287,12 +314,14 @@ bool HPAGraph::EdgeExists(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 	return false;
 }
 
+//Builds the graph entrances
 void HPAGraph::buildEntrances()
 {
 	Cluster* c1;
 	Cluster* c2;
 	ADJACENT_DIR adjacentDir = ADJACENT_DIR::DIR_NONE;
 
+	//We simply iterate though the clusters & check if they are adjacent, if so we put an entrance between them
 	for (uint i = 0; i < this->lvlClusters[0].size(); ++i)
 	{
 		c1 = &this->lvlClusters[0].at(i);
@@ -301,7 +330,7 @@ void HPAGraph::buildEntrances()
 		{
 			c2 = &this->lvlClusters[0].at(k);
 
-			adjacentDir = adjacents(c1, c2, 1);
+			adjacentDir = ClustersAreAdjacent(c1, c2, 1);
 
 			if (adjacentDir != ADJACENT_DIR::DIR_NONE)
 				createEntrance(c1, c2, adjacentDir, 1);
@@ -317,12 +346,16 @@ void HPAGraph::createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int
 	int startedAt = INT_MIN;
 	bool isCurrentWalkable = true;
 
+	//The creation of the entrances is divided in the two aixs for visibility purporses
 	switch (adjDir)
 	{
 	case ADJACENT_DIR::VERTICAL:
 	{
+		//First of all we iterate though the cluster
 		for (int i = c1->pos.x; i < (c1->pos.x + c1->width); i++)
 		{
+
+			//We check if BOTH the tiles that connect the cluster are walkable
 			isCurrentWalkable = (App->pathfinding->IsWalkable({ i, c1->pos.y + c1->height - 1 }) && App->pathfinding->IsWalkable({ i, c2->pos.y }));
 
 			if (isCurrentWalkable)
@@ -330,12 +363,16 @@ void HPAGraph::createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int
 				if (startedAt == INT_MIN)
 					startedAt = i;
 
+				//If we reach the end, we create an entrance
 				if (i == (c1->pos.x + c1->width - 1))
 					this->entrances.push_back(Entrance({ startedAt, c1->pos.y + c1->height - 1 }, c1->width - startedAt + c1->pos.x, 2, adjDir));
 
 			}
 			else if (!isCurrentWalkable)
 			{
+
+				// We check if we come from a tile that's walkable, if so we create a new entrance
+				// This is done to make sure the pathfinding will work even if there are non-walkable tiles between clusters
 				if (startedAt != INT_MIN)
 				{
 					this->entrances.push_back(Entrance({ startedAt, c1->pos.y + c1->height - 1 }, i - startedAt, 2, adjDir));
@@ -348,6 +385,8 @@ void HPAGraph::createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int
 
 	case ADJACENT_DIR::LATERAL:
 	{
+		//Same as vertical but in the y axis
+
 		for (int i = c1->pos.y; i < (c1->pos.y + c1->height); i++)
 		{
 			isCurrentWalkable = (App->pathfinding->IsWalkable({ c1->pos.x + c1->width - 1,i }) && App->pathfinding->IsWalkable({ c2->pos.x, i }));
@@ -375,7 +414,8 @@ void HPAGraph::createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int
 	}
 }
 
-ADJACENT_DIR HPAGraph::adjacents(Cluster* c1, Cluster* c2, int lvl)
+
+ADJACENT_DIR HPAGraph::ClustersAreAdjacent(Cluster* c1, Cluster* c2, int lvl)
 {
 	int adjDist = CLUSTER_SIZE_LVL * lvl;
 
@@ -388,18 +428,26 @@ ADJACENT_DIR HPAGraph::adjacents(Cluster* c1, Cluster* c2, int lvl)
 	return ADJACENT_DIR::DIR_NONE;
 }
 
+//Builds clusters for an specific level
 void HPAGraph::buildClusters(int lvl)
 {
+	//Cluster distance in the current level
 	int clustSize = CLUSTER_SIZE_LVL * lvl;
 
+	//Buffer vector
 	std::vector <Cluster> clusterVector;
+
+
 	int width = App->pathfinding->mapWidth;
 	int height = App->pathfinding->mapHeight;
 
 	Cluster c;
 
+	//We will create the cluster in a row-column order
 	for (int i = 0; i < width; i += clustSize)
 	{
+
+		//Check if the cluster would extend beyond the map
 		if (i + clustSize > width)
 			c.width = width - (i);
 		else
@@ -407,19 +455,24 @@ void HPAGraph::buildClusters(int lvl)
 
 		for (int k = 0; k < height; k += clustSize)
 		{
+
+			//Check if the cluster would extend beyond the map
 			if (k + clustSize > height)
 				c.height = height - (k);
 			else
 				c.height = clustSize;
 
+			//Introduce the Cluster into the vector buffer
 			c.pos = { i,k };
 			clusterVector.push_back(Cluster(c));
 		}
 	}
 
+	//Introduce the vector to the main one
 	this->lvlClusters.push_back(clusterVector);
 }
 
+//Inserts a node into the graph
 HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 {
 	BROFILER_CATEGORY("Insert Node", Profiler::Color::Cornsilk);
@@ -430,12 +483,16 @@ HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 	if (!App->pathfinding->IsWalkable(pos))
 		return nullptr;
 
-	c = determineCluster(pos, Lvl);
+	//Determine the cluster
+	c = DetermineCluster(pos, Lvl);
 	if (!c)
 		return nullptr;
 
+	//Check if already exists
 	newNode = NodeExists(pos, c);
 
+
+	//If can be placed inside a cluster & there is no node already there, we create one
 	if (!newNode)
 	{
 		newNode = new HierNode(pos);
@@ -448,31 +505,41 @@ HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 	return newNode;
 }
 
+//Connects a recently introduced node to it's peers in the same cluster
 void HPAGraph::ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl)
 {
 	float distanceTo = 0;
 	for (int i = 0; i < c->clustNodes.size(); i++)
 	{
+		//To calculate the cost to the node peers, we should do A* and get the cost from there
+		//But since this is really expensive
 		if (i == 0)
 		{
 			distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos);
 
 			if (distanceTo == -1)
+			{
+				node->edges.clear();
 				break;
+			}
 		}
-		distanceTo = node->pos.OctileDistance(c->clustNodes[i]->pos);
+		else
+			distanceTo = node->pos.OctileDistance(c->clustNodes[i]->pos);
 
+		//Create the edges between the two nodes
 		node->edges.push_back(new Edge(c->clustNodes[i], distanceTo, lvl, EDGE_TYPE::INTRA));
 		c->clustNodes[i]->edges.push_back(new Edge(node, distanceTo, lvl, EDGE_TYPE::INTRA));
 	}
 
 }
 
-Cluster* HPAGraph::determineCluster(iPoint pos, int lvl, Cluster* firstCheck)
+//Determines the cluster in which a node is placed
+Cluster* HPAGraph::DetermineCluster(iPoint pos, int lvl, Cluster* firstCheck)
 {
 	BROFILER_CATEGORY("Determine Cluster", Profiler::Color::DeepPink);
 	int currLvl = lvl - 1;
 
+	//If we are suspicious is on a concrete cluster, we can check it first
 	if (firstCheck)
 	{
 		if (pos.x >= firstCheck->pos.x && pos.y >= firstCheck->pos.y &&
@@ -480,6 +547,7 @@ Cluster* HPAGraph::determineCluster(iPoint pos, int lvl, Cluster* firstCheck)
 			return firstCheck;
 	}
 
+	//Iterate though all the clusters & check if the position of the node is between them
 	Cluster* it;
 	for (int i = 0; i < lvlClusters[currLvl].size(); i++)
 	{
@@ -493,16 +561,20 @@ Cluster* HPAGraph::determineCluster(iPoint pos, int lvl, Cluster* firstCheck)
 	return nullptr;
 }
 
+//Deletes a node from the graph
 void HPAGraph::deleteNode(HierNode* toDelete, int lvl)
 {
 	BROFILER_CATEGORY("Delete Node", Profiler::Color::DarkViolet);
 
 	Cluster* c = nullptr;
+	int toDeletePos = -1;
 
-	c = determineCluster(toDelete->pos, lvl);
+
+	c = DetermineCluster(toDelete->pos, lvl);
 
 	if (c)
 	{
+		//Deletes the connections to the node scheduled for deletion
 		for (int i = 0; i < c->clustNodes.size(); i++)
 		{
 			for (int j = 0; j < c->clustNodes[i]->edges.size(); j++)
@@ -516,27 +588,33 @@ void HPAGraph::deleteNode(HierNode* toDelete, int lvl)
 					break;
 				}
 			}
+			toDeletePos = i;
+
 		}
 
-		for (int i = 0; i < c->clustNodes.size(); i++)
+		//Deletes the node from the cluster
+		if (toDeletePos != -1)
 		{
-			if (c->clustNodes[i]->pos == toDelete->pos)
+
+			for (int j = 0; j < toDelete->edges.size(); j++)
 			{
-				for (int j = 0; j < toDelete->edges.size(); j++)
-				{
-					c->clustNodes[i]->edges[j]->dest = nullptr;
-					delete c->clustNodes[i]->edges[j];
+				c->clustNodes[toDeletePos]->edges[j]->dest = nullptr;
+				delete c->clustNodes[toDeletePos]->edges[j];
 
-				}
-
-				c->clustNodes.erase(c->clustNodes.begin() + i);
-				toDelete->edges.clear();
-				delete toDelete;
-				break;
 			}
+
+			c->clustNodes.erase(c->clustNodes.begin() + toDeletePos);
+			toDelete->edges.clear();
+			delete toDelete;
 		}
+
 	}
+
 }
+
+
+
+//Constructores------------
 
 Edge::Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type) : dest(dest), moveCost(distanceTo), lvl(lvl), type(type)
 {}
@@ -684,17 +762,21 @@ float PathNode::Score() const
 uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl)
 {
 	int edgeNum = edges.size();
-	HierNode* curr = nullptr;
+	HierNode* currNode = nullptr;
 	Edge* currEdge = nullptr;
 
+	//Iterate though all the node edges
 	for (int i = 0; i < edgeNum; i++)
 	{
 		currEdge = edges[i];
 
-		if (!MULTILEVEL_SEARCH || (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl == lvl || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl >= lvl))
+		//Checks if the edge has the correct level to put it in the list
+			//INTRA: have to be from the same level
+			//INTER: can be from the same level or superior
+		if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl == lvl || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl >= lvl)
 		{
-			curr = currEdge->dest;
-			list_to_fill.push_back(HierNode(currEdge->moveCost + this->g, curr->pos, this, myDirection, curr->parentDir, curr->edges));
+			currNode = currEdge->dest;
+			list_to_fill.push_back(HierNode(currEdge->moveCost + this->g, currNode->pos, this, myDirection, currNode->parentDir, currNode->edges));
 		}
 
 	}
@@ -724,8 +806,11 @@ PATH_TYPE ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& dest
 
 	last_path.clear();
 
+	//HPA*------
 	if (maxLvl > 0)
 	{
+
+		//Insert the nodes into the graph
 		n1 = absGraph.insertNode(origin, maxLvl, &toDeleteN1);
 		n2 = absGraph.insertNode(destination, maxLvl, &toDeleteN2);
 
@@ -734,9 +819,12 @@ PATH_TYPE ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& dest
 
 		n1->h = n1->pos.OctileDistance(n2->pos);
 
-		//Abs Path
+
+		//HPA* algorithm
 		HPAPathfinding(*n1, n2->pos, maxLvl);
 
+
+		//Delete the nodes from the graph
 		if (toDeleteN1)
 			absGraph.deleteNode((HierNode*)n1, maxLvl);
 		if (toDeleteN2)
@@ -745,6 +833,7 @@ PATH_TYPE ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& dest
 		ret = PATH_TYPE::ABSTRACT;
 
 	}
+	//A*------------------
 	else
 	{
 		SimpleAPathfinding(origin, destination);
@@ -752,6 +841,7 @@ PATH_TYPE ModulePathfinding::CreatePath(const iPoint& origin, const iPoint& dest
 		ret = PATH_TYPE::SIMPLE;
 	}
 
+	//Save the generated path------
 	generatedPaths.erase(pathRequest);
 	generatedPaths.insert({ pathRequest, generatedPath(last_path, ret, maxLvl) });
 
@@ -763,10 +853,12 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 {
 	BROFILER_CATEGORY("HPA Algorithm", Profiler::Color::AliceBlue);
 
+	last_path.clear();
+
+	//Variable declaration-----
+	//Open & Closed
 	std::multimap<float, HierNode> open;
 	std::vector<HierNode> closed;
-
-	open.insert(std::pair<float, HierNode>(0.f, origin));
 
 	//Analize the current
 	HierNode* curr = nullptr;
@@ -776,6 +868,10 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 	uint limit = 0;
 	std::vector<HierNode> adjList;
 	std::multimap<float, HierNode>::iterator it2;
+
+
+	open.insert(std::pair<float, HierNode>(0.f, origin));
+
 
 	while (open.empty() == false)
 	{
@@ -806,6 +902,7 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 
 		for (uint i = 0; i < limit; i++)
 		{
+
 			if (FindV(adjList[i].pos, &closed) == closed.size())
 			{
 				it2 = Find(adjList[i].pos, &open);
@@ -835,10 +932,10 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 
 	last_path.clear();
 
+	//Variable declaration-----
+	//Open & Closed
 	std::multimap<float, PathNode> open;
 	std::vector<PathNode> closed;
-
-	open.insert(std::pair<float, PathNode>(0.f, PathNode(0.f, origin.OctileDistance(destination), origin, nullptr, 0, 0)));
 
 	//Analize the current
 	PathNode* curr = nullptr;
@@ -848,6 +945,8 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 	uint limit = 0;
 	std::vector<PathNode> adjList;
 	std::multimap<float, PathNode>::iterator it2;
+
+	open.insert(std::pair<float, PathNode>(0.f, PathNode(0.f, origin.OctileDistance(destination), origin, nullptr, 0, 0)));
 
 	while (open.empty() == false)
 	{
@@ -962,7 +1061,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 		{
 			startPos = currPos;
 			from = i;
-			fromC = absGraph.determineCluster(startPos, lvl);
+			fromC = absGraph.DetermineCluster(startPos, lvl);
 			i++;
 			continue;
 		}
@@ -970,7 +1069,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 		//Two Conditions to make path:
 			//Check that Distance is not greater than Cluster Size
 			//Not be the last node
-		if (fromC != absGraph.determineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
+		if (fromC != absGraph.DetermineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
 		{
 
 			dir = IsStraightPath(startPos, currPos);
@@ -1188,7 +1287,7 @@ bool ModulePathfinding::DoStraightPath(PATH_DIR dir, std::vector<iPoint>* toFill
 //Fins for A* MultiMap
 std::multimap<float, PathNode>::iterator ModulePathfinding::Find(iPoint point, std::multimap<float, PathNode>* map)
 {
-	BROFILER_CATEGORY("A* Find", Profiler::Color::Azure);
+	//BROFILER_CATEGORY("A* Find", Profiler::Color::Azure);
 
 	std::multimap<float, PathNode>::iterator iterator = map->begin();
 
@@ -1209,7 +1308,7 @@ std::multimap<float, PathNode>::iterator ModulePathfinding::Find(iPoint point, s
 //Fins for HPA MultiMap
 std::multimap<float, HierNode>::iterator ModulePathfinding::Find(iPoint point, std::multimap<float, HierNode>* map)
 {
-	BROFILER_CATEGORY("HPA Find", Profiler::Color::MediumBlue);
+	//BROFILER_CATEGORY("HPA Find", Profiler::Color::MediumBlue);
 
 	std::multimap<float, HierNode>::iterator iterator = map->begin();
 
@@ -1231,7 +1330,7 @@ std::multimap<float, HierNode>::iterator ModulePathfinding::Find(iPoint point, s
 //Find for A* Vector
 int ModulePathfinding::FindV(iPoint point, std::vector<PathNode>* vec)
 {
-	BROFILER_CATEGORY("A* FindV", Profiler::Color::LawnGreen);
+	//BROFILER_CATEGORY("A* FindV", Profiler::Color::LawnGreen);
 
 	int numElements = vec->size();
 
@@ -1249,7 +1348,7 @@ int ModulePathfinding::FindV(iPoint point, std::vector<PathNode>* vec)
 //Find for HPA Vector
 int ModulePathfinding::FindV(iPoint point, std::vector<HierNode>* vec)
 {
-	BROFILER_CATEGORY("HPA FindV", Profiler::Color::DarkSeaGreen);
+	//BROFILER_CATEGORY("HPA FindV", Profiler::Color::DarkSeaGreen);
 
 	int numElements = vec->size();
 

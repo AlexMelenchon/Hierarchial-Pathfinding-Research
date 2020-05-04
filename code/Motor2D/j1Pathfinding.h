@@ -41,20 +41,22 @@ enum class PATH_DIR
 	DIR_DIA_Y_NEG_X_POS,
 };
 
-enum class EDGE_TYPE
+
+//Store the Generated Paths
+struct generatedPath
 {
-	NO_YPE = -1,
+	generatedPath(std::vector <iPoint> vector, PATH_TYPE type, int lvl);
 
-	INTRA,
-	INTER
 
+	std::vector<iPoint> path;
+	PATH_TYPE type;
+	int pathLvl;
 };
 
 //HPA*-------------------------------------------
 #define NODE_MIN_DISTANCE 5
 #define CLUSTER_SIZE_LVL 5
 #define MAX_LEVELS 2
-#define MULTILEVEL_SEARCH false
 
 class HierNode;
 class Entity;
@@ -67,6 +69,16 @@ enum class ADJACENT_DIR
 
 	VERTICAL,
 	LATERAL
+};
+
+//Enum to indicate the Node connection type
+enum class EDGE_TYPE
+{
+	NO_YPE = -1,
+
+	INTRA, //Connections between same cluster nodes
+	INTER //Connection between other cluster nodes 
+
 };
 
 
@@ -130,21 +142,27 @@ struct HPAGraph
 	void PrepareGraph();
 	void CreateGraphLvl(int lvl);
 
+	//Building Inner Structures: 
+		//Build is for logic determination & creation of all the elements of the structure
+		//Create is for the creation of a single object
 	void buildClusters(int lvl);
+
 	void buildEntrances();
 	void createEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
+
+	void BuildInterNode(iPoint n1, Cluster* c1, iPoint n2, Cluster* c2, int lvl);
 	void createInterNodes(int lvl);
-	void BuildInterNode(iPoint n1,Cluster* c1, iPoint n2, Cluster* c2, int lvl);
+
 	void createIntraNodes(int lvl);
+
+	void CreateEdges(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type);
 
 
 	//Utility
-	ADJACENT_DIR adjacents(Cluster* c1, Cluster* c2, int lvl);
+	ADJACENT_DIR ClustersAreAdjacent(Cluster* c1, Cluster* c2, int lvl);
 	HierNode* NodeExists(iPoint pos, Cluster* lvl);
-	void CreateEdges(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type);
 	bool EdgeExists(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type);
-
-	Cluster* determineCluster(iPoint nodePos, int lvl, Cluster* firstCheck = nullptr);
+	Cluster* DetermineCluster(iPoint nodePos, int lvl, Cluster* firstCheck = nullptr);
 
 	//Node Insertion
 	HierNode* insertNode(iPoint pos, int lvl, bool* toDelete = nullptr);
@@ -154,18 +172,6 @@ struct HPAGraph
 };
 
 //Basic A*---------------------------------------
-
-
-//Store the Generated Paths
-struct generatedPath
- {
-	generatedPath(std::vector <iPoint> vector, PATH_TYPE type, int lvl);
-
-	std::vector<iPoint> path;
-	PATH_TYPE type;
-	int pathLvl;
-};
-
 
 class PathNode
 {
@@ -190,7 +196,7 @@ public:
 
 };
 
-//PathNode for higher hierchy Nodes
+//HPA* Nodes
 class HierNode : public PathNode
 {
 public:
@@ -235,7 +241,7 @@ public:
 
 private:
 
-	//HPA Preprocessing
+	//HPA Graph Creation
 	void HPAPreProcessing(int maxLevel);
 
 	//Pathfinding FIND Utilities
@@ -244,7 +250,7 @@ private:
 	int FindV(iPoint point, std::vector<PathNode>* vec);
 	int FindV(iPoint point, std::vector<HierNode>* vec);
 
-	//HPA Utilities
+	//HPA Refining & Smoothing Tools
 	bool RefineAndSmoothPath(std::vector<iPoint>* absPath, int lvl, std::vector<iPoint>* refinedPath);
 	PATH_DIR IsStraightPath(iPoint from, iPoint to);
 	bool DoStraightPath(PATH_DIR dir, std::vector<iPoint>* toFill, iPoint startPos, iPoint currPos);

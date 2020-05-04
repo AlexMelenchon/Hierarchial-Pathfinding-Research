@@ -31,6 +31,8 @@ public:
 		this->y = y;
 	}
 
+
+
 	p2Point& create(const TYPE& x, const TYPE& y)
 	{
 		this->x = x;
@@ -108,6 +110,14 @@ public:
 		return (x != v.x || y != v.y);
 	}
 
+	const p2Point& operator =(const p2Point& v)
+	{
+		x = v.x;
+		y = v.y;
+
+		return(*this);
+	}
+
 	// Utils ------------------------------------------------
 	bool IsZero() const
 	{
@@ -167,7 +177,6 @@ public:
 	{
 		int dx = abs(v.x - x);
 		int dy = abs(v.y - y);
-
 
 		return  max(dx, dy) + (0.41f) * min(dx, dy);
 	}
