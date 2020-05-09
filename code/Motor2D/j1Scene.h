@@ -34,15 +34,32 @@ public:
 	bool CleanUp();
 
 
+
 	SDL_Texture* debug_tex;
+	SDL_Texture* debug_texRed;
+	SDL_Texture* debug_texGreen;
+	SDL_Texture* debug_texBlue;
+
+	SDL_Texture* debug_texPink;
+	SDL_Texture* debug_texYellow;
+	SDL_Texture* debug_texCyan;
+
 	SDL_Texture* debug_tex5x5;
 
 private:
+	SDL_Texture* GetRandomTexture(int i);
+
+private:
 	bool entrances = false;
+	bool nodes = false;
+	bool edges = false;
+	bool clusters = false;
 
 	std::vector<iPoint> absPath;
 
 	float updatePathTimer = 0.f;
+
+	int abstractDebugLvl = 0;
 };
 
 #endif // __j1SCENE_H__

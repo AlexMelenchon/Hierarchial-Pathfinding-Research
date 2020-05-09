@@ -327,10 +327,12 @@ void Entity::DebugDraw()
 
 	fPoint nextPoint = { 0,0 };
 	App->map->WorldToMapCoords(round(position.x), round(position.y),App->map->data, origin.x, origin.y);
-	origin = App->map->MapToWorld(origin.x, origin.y);
 
-	App->render->DrawQuad({ (int)origin.x, (int)origin.y, 10,10 }, 255, 255, 255, 125);
+	fPoint origin2 = App->map->MapToWorld(origin.x, origin.y);
 
+	App->render->DrawQuad({ (int)origin2.x, (int)origin2.y, 10,10 }, 255, 255, 255, 125);
+
+	origin = { (int)origin2.x, (int)origin2.y };
 
 	// Debug pathfinding ------------------------------
 
@@ -339,7 +341,7 @@ void Entity::DebugDraw()
 	std::vector<iPoint>* path = &this->path;
 	for (std::vector<iPoint>::iterator it = path->begin(); it != path->end(); ++it)
 	{
-		iPoint pos = App->map->MapToWorld(it->x - 1, it->y);
+		fPoint pos = App->map->MapToWorld(it->x - 1, it->y);
 		App->render->Blit(debugTex, pos.x, pos.y);
 	}
 }

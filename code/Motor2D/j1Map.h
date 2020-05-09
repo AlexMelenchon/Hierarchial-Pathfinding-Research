@@ -118,7 +118,7 @@ public:
 	// Load new map
 	bool Load(const char* path);
 
-	iPoint MapToWorld(int x, int y) const;
+	fPoint MapToWorld(int x, int y) const;
 	iPoint WorldToMap(int x, int y) const;
 	void j1Map::WorldToMapCoords(int x, int y, MapData& dat, int& outX, int& outY) const;
 	void j1Map::MapToWorldCoords(int posX, int posY, MapData& dat, float& outX, float& outY);
@@ -138,6 +138,7 @@ private:
 public:
 
 	MapData data;
+	bool				nonWalkableDraw;
 
 private:
 

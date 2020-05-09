@@ -6,7 +6,7 @@
 #include "j1Map.h"
 #include <math.h>
 
-j1Map::j1Map() : j1Module(), map_loaded(false)
+j1Map::j1Map() : j1Module(), map_loaded(false), nonWalkableDraw(false)
 {
 	name.create("map");
 }
@@ -37,8 +37,8 @@ void j1Map::Draw()
 	{
 		MapLayer* layer = item->data;
 
-		//if(layer->properties.Get("Nodraw") != 0)
-			//continue;
+		if(layer->properties.Get("Nodraw") != 0 && !nonWalkableDraw)
+			continue;
 
 		for(int y = 0; y < data.height; ++y)
 		{
@@ -50,7 +50,7 @@ void j1Map::Draw()
 					TileSet* tileset = GetTilesetFromTileId(tile_id);
 
 					SDL_Rect r = tileset->GetTileRect(tile_id);
-					iPoint pos = MapToWorld(x, y);
+					fPoint pos = MapToWorld(x, y);
 
 					App->render->Blit(tileset->texture, pos.x, pos.y, &r);
 				}
@@ -92,9 +92,9 @@ TileSet* j1Map::GetTilesetFromTileId(int id) const
 	return set;
 }
 
-iPoint j1Map::MapToWorld(int x, int y) const
+fPoint j1Map::MapToWorld(int x, int y) const
 {
-	iPoint ret;
+	fPoint ret;
 
 	if(data.type == MAPTYPE_ORTHOGONAL)
 	{

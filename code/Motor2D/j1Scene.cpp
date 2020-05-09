@@ -42,7 +42,24 @@ bool j1Scene::Start()
 	}
 
 	debug_tex = App->tex->Load("maps/path2.png");
-	debug_tex5x5 = App->tex->Load("maps/path.png");
+
+	debug_texRed = App->tex->Load("maps/path2.png");
+	SDL_SetTextureColorMod(debug_texRed, 255, 0, 0);
+
+	debug_texGreen = App->tex->Load("maps/path2.png");
+	SDL_SetTextureColorMod(debug_texGreen, 0, 255, 0);
+
+	debug_texBlue = App->tex->Load("maps/path2.png");
+	SDL_SetTextureColorMod(debug_texBlue, 0, 0, 255);
+
+	debug_texPink = App->tex->Load("maps/path2.png");
+	SDL_SetTextureColorMod(debug_texPink, 255, 0, 255);
+
+	debug_texYellow = App->tex->Load("maps/path2.png");
+	SDL_SetTextureColorMod(debug_texYellow, 255, 255, 0);
+
+	debug_texCyan = App->tex->Load("maps/path2.png");
+	SDL_SetTextureColorMod(debug_texCyan, 0, 255, 255);
 
 	return true;
 }
@@ -102,20 +119,63 @@ bool j1Scene::Update(float dt)
 	if (App->input->GetKey(SDL_SCANCODE_S) == KEY_DOWN)
 		App->SaveGame("save_game.xml");
 
-	if (App->input->GetKey(SDL_SCANCODE_UP) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_W) == KEY_REPEAT)
 		App->render->camera.y += 750 * dt;
 
-	if (App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_S) == KEY_REPEAT)
 		App->render->camera.y -= 750 * dt;
 
-	if (App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
 		App->render->camera.x += 750 * dt;
 
-	if (App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
+	if (App->input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
 		App->render->camera.x -= 750 * dt;
 
-	if (App->input->GetKey(SDL_SCANCODE_F2) == KEY_DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_F1) == KEY_DOWN)
+	{
+		if (clusters)
+			clusters = false;
+
 		entrances = !entrances;
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F2) == KEY_DOWN)
+		nodes = !nodes;
+
+	if (App->input->GetKey(SDL_SCANCODE_F3) == KEY_DOWN)
+		edges = !edges;
+
+	if (App->input->GetKey(SDL_SCANCODE_F4) == KEY_DOWN)
+	{
+		if (entrances)
+			entrances = false;
+
+		clusters = !clusters;
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F5) == KEY_DOWN)
+	{
+		App->map->nonWalkableDraw = !App->map->nonWalkableDraw;
+	}
+
+	
+
+	if (App->input->GetKey(SDL_SCANCODE_UP) == KEY_DOWN)
+	{
+		abstractDebugLvl++;
+
+		if (abstractDebugLvl >= MAX_LEVELS)
+			abstractDebugLvl--;
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_DOWN)
+	{
+		abstractDebugLvl--;
+
+		if (abstractDebugLvl < 0)
+			abstractDebugLvl = 0;
+	}
+
 
 	App->map->Draw();
 
@@ -134,44 +194,128 @@ bool j1Scene::Update(float dt)
 	App->input->GetMousePosition(x, y);
 	iPoint p = App->render->ScreenToWorld(x, y);
 	p = App->map->WorldToMap(p.x, p.y);
-	p = App->map->MapToWorld(p.x, p.y);
+	fPoint p2 = App->map->MapToWorld(p.x, p.y);
 
-	App->render->Blit(debug_tex, p.x, p.y);
+	App->render->Blit(debug_tex, p2.x, p2.y);
 
 
-	if (App->input->GetKey(SDL_SCANCODE_F3) == KEY_DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_F4) == KEY_DOWN)
 	{
 		App->pathfinding->RequestPath(nullptr, &absPath);
 		updatePathTimer = 0.f;
 	}
 
 
+	//Path debug draw
 	if (absPath.size() > 0)
+	{
 		for (std::vector<iPoint>::iterator it = absPath.begin(); it != absPath.end(); ++it)
 		{
-			iPoint pos = App->map->MapToWorld(it->x, it->y);
+			fPoint pos = App->map->MapToWorld(it->x, it->y);
 			App->render->Blit(debug_tex, pos.x, pos.y);
 		}
+	}
 
+	//Entrances debug draw
 	if (entrances)
+	{
+
 		for (int i = 0; i < App->pathfinding->absGraph.entrances.size(); i++)
 		{
-			iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.entrances[i].pos.x, App->pathfinding->absGraph.entrances[i].pos.y);
-			App->render->Blit(debug_tex, pos.x, pos.y);
-		}
+			Entrance* currEntrance = &App->pathfinding->absGraph.entrances[i];
+			SDL_Texture* randomText = GetRandomTexture(i);
 
-	for (int i = 0; i < App->pathfinding->absGraph.lvlClusters[1].size(); i++)
+			if (nodes)
+				SDL_SetTextureAlphaMod(randomText, 255 * 0.5f);
+
+
+			for (int j = 0; j < currEntrance->width; j++)
+			{
+				for (int k = 0; k < currEntrance->height; k++)
+				{
+					fPoint pos = App->map->MapToWorld(currEntrance->pos.x + j, currEntrance->pos.y + k);
+					App->render->Blit(randomText, pos.x, pos.y);
+				}
+			}
+
+			SDL_SetTextureAlphaMod(randomText, 255);
+
+		}
+	}
+
+	//Nodes Debug Draw
+	if (nodes)
 	{
-		return true;
-		//iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.x-2, App->pathfinding->absGraph.lvlClusters[0].at(i)->pos.y-2);
-		//App->render->Blit(debug_tex5x5, pos.x, pos.y);
-
-		for (int y = 0; y < App->pathfinding->absGraph.lvlClusters[1].at(i).clustNodes.size(); y++)
+		for (int i = 0; i < App->pathfinding->absGraph.lvlClusters[abstractDebugLvl].size(); i++)
 		{
-			iPoint pos = App->map->MapToWorld(App->pathfinding->absGraph.lvlClusters[1].at(i).clustNodes[y]->pos.x, App->pathfinding->absGraph.lvlClusters[1].at(i).clustNodes[y]->pos.y);
-			App->render->Blit(debug_tex, pos.x, pos.y);
-		}
+			SDL_Texture* randomText = GetRandomTexture(i);
+			Cluster* currCluster = &App->pathfinding->absGraph.lvlClusters[abstractDebugLvl].at(i);
 
+			for (int y = 0; y < currCluster->clustNodes.size(); y++)
+			{
+				HierNode* currNode = currCluster->clustNodes[y];
+
+				fPoint pos = App->map->MapToWorld(currNode->pos.x, currNode->pos.y);
+				App->render->Blit(randomText, pos.x, pos.y);
+
+				//Edges Debug Draw
+				if (edges)
+				{
+					for (int k = 0; k < currNode->edges.size(); k++)
+					{
+						Edge* currEdge = currNode->edges[k];
+
+						if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl != abstractDebugLvl+1 || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl < abstractDebugLvl+1)
+							continue;
+
+
+						SDL_Color edgeColor = { 255,255,255 };
+						SDL_GetTextureColorMod(randomText, &edgeColor.r, &edgeColor.g, &edgeColor.b);
+
+						fPoint offset = { App->map->data.tile_width * 0.5f , App->map->data.tile_height * 0.5f };
+						fPoint from = App->map->MapToWorld(currNode->pos.x, currNode->pos.y);
+						fPoint to = App->map->MapToWorld(currEdge->dest->pos.x, currEdge->dest->pos.y);
+
+
+
+						App->render->DrawLine(from.x + offset.x, from.y + offset.y, to.x + offset.x, to.y + offset.y, edgeColor.r, edgeColor.g, edgeColor.b);
+
+					}
+				}
+
+			}
+
+		}
+	}
+
+
+	if (clusters)
+	{
+		for (int i = 0; i < App->pathfinding->absGraph.lvlClusters[abstractDebugLvl].size(); i++)
+		{
+			Cluster* currCluster = &App->pathfinding->absGraph.lvlClusters[abstractDebugLvl].at(i);
+
+			SDL_Texture* randomText = GetRandomTexture(i);
+
+			if (nodes)
+				SDL_SetTextureAlphaMod(randomText, 255 * 0.5f);
+
+
+			for (int j = 0; j < currCluster->width; j++)
+			{
+				for (int k = 0; k < currCluster->height; k++)
+				{
+					if (!App->map->nonWalkableDraw || App->pathfinding->IsWalkable({ currCluster->pos.x + j, currCluster->pos.y + k }))
+					{
+						fPoint pos = App->map->MapToWorld(currCluster->pos.x + j, currCluster->pos.y + k);
+						App->render->Blit(randomText, pos.x, pos.y);
+					}
+				}
+			}
+
+			SDL_SetTextureAlphaMod(randomText, 255);
+
+		}
 	}
 
 	return true;
@@ -194,4 +338,46 @@ bool j1Scene::CleanUp()
 	LOG("Freeing scene");
 
 	return true;
+}
+
+SDL_Texture* j1Scene::GetRandomTexture(int i)
+{
+	SDL_Texture* ret = debug_tex;
+
+	int random = i % 6;
+
+	switch (random)
+	{
+	case 0:
+		ret = debug_texRed;
+		break;
+
+	case 1:
+		ret = debug_texGreen;
+		break;
+
+	case 2:
+		ret = debug_texBlue;
+		break;
+
+	case 3:
+		ret = debug_texYellow;
+		break;
+
+	case 4:
+		ret = debug_texPink;
+		break;
+
+	case 5:
+		ret = debug_texCyan;
+		break;
+
+	default:
+		ret = debug_tex;
+		break;
+	}
+
+
+
+	return ret;
 }
