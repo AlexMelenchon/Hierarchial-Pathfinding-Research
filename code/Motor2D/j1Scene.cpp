@@ -199,7 +199,7 @@ bool j1Scene::Update(float dt)
 	App->render->Blit(debug_tex, p2.x, p2.y);
 
 
-	if (App->input->GetKey(SDL_SCANCODE_F4) == KEY_DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
 		App->pathfinding->RequestPath(nullptr, &absPath);
 		updatePathTimer = 0.f;
@@ -209,11 +209,16 @@ bool j1Scene::Update(float dt)
 	//Path debug draw
 	if (absPath.size() > 0)
 	{
+		if (clusters || nodes)
+			SDL_SetTextureAlphaMod(debug_tex, 255 * 0.5f);
+
 		for (std::vector<iPoint>::iterator it = absPath.begin(); it != absPath.end(); ++it)
 		{
 			fPoint pos = App->map->MapToWorld(it->x, it->y);
 			App->render->Blit(debug_tex, pos.x, pos.y);
 		}
+		SDL_SetTextureAlphaMod(debug_tex, 255);
+
 	}
 
 	//Entrances debug draw

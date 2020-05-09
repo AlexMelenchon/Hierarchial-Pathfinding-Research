@@ -1016,7 +1016,7 @@
    <tile gid="26"/>
    <tile gid="26"/>
    <tile gid="26"/>
-   <tile/>
+   <tile gid="26"/>
    <tile/>
    <tile/>
    <tile/>
@@ -1035,22 +1035,12 @@
    <tile gid="26"/>
    <tile/>
    <tile/>
-   <tile/>
-   <tile/>
    <tile gid="26"/>
    <tile gid="26"/>
    <tile gid="26"/>
-   <tile/>
-   <tile/>
-   <tile/>
-   <tile/>
-   <tile/>
    <tile gid="26"/>
    <tile gid="26"/>
    <tile gid="26"/>
-   <tile/>
-   <tile/>
-   <tile/>
    <tile/>
    <tile/>
    <tile/>
@@ -1065,6 +1055,16 @@
    <tile/>
    <tile/>
    <tile/>
+   <tile gid="26"/>
+   <tile gid="26"/>
+   <tile gid="26"/>
+   <tile/>
+   <tile/>
+   <tile/>
+   <tile/>
+   <tile gid="26"/>
+   <tile gid="26"/>
+   <tile gid="26"/>
    <tile/>
    <tile/>
    <tile/>
@@ -1303,7 +1303,7 @@
    <tile/>
   </data>
  </layer>
- <objectgroup id="3" name="Capa de Objetos 1">
+ <objectgroup id="3" name="Capa de Objetos 1" visible="0">
   <object id="3" x="-0.75" y="0.75" width="160.75" height="159.75"/>
   <object id="4" x="200" y="331"/>
   <object id="6" x="-1.66667" y="159.667" width="161.667" height="159"/>
