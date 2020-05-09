@@ -125,7 +125,7 @@ void ModulePathfinding::SetMap(uint width, uint height, uchar* data)
 
 void ModulePathfinding::HPAPreProcessing(int maxLevel)
 {
-	if (maxLevel <= 1)
+	if (maxLevel < 1)
 		return;
 
 	//Prepares Entrances & the 1st level of the graph
@@ -283,9 +283,6 @@ void HPAGraph::createIntraNodes(int lvl)
 			{
 				CreateEdges(clusterIt->clustNodes[y], clusterIt->clustNodes[k], lvl, EDGE_TYPE::INTRA);
 
-				//distanceTo = App->pathfinding->SimpleAPathfinding(clusterIt->clustNodes[y]->pos, clusterIt->clustNodes[k]->pos);
-				//clusterIt->clustNodes[y]->edges.push_back(new Edge(clusterIt->clustNodes[k], distanceTo));
-				//clusterIt->clustNodes[k]->edges.push_back(new Edge(clusterIt->clustNodes[y], distanceTo));
 			}
 		}
 	}
@@ -319,9 +316,10 @@ void HPAGraph::CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 	float distanceTo = 1.f;
 
 	//First check if already exists
-	if (!EdgeExists(n1, n2, lvl, type))
+		//We will always create the INTRA edge (multi-level purposes)
+		//If the type is INTER we will check if it exists
+	if (type == EDGE_TYPE::INTRA || !EdgeExists(n1, n2, lvl, type))
 	{
-
 		//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
 		if (type == EDGE_TYPE::INTRA)
 		{
@@ -332,7 +330,7 @@ void HPAGraph::CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 	}
 
 	//Repeat the process for the second node----
-	if (!EdgeExists(n2, n1, lvl, type))
+	if (type == EDGE_TYPE::INTRA || !EdgeExists(n2, n1, lvl, type))
 	{
 		if (type == EDGE_TYPE::INTRA)
 		{
