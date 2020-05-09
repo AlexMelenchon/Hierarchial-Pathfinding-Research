@@ -15,6 +15,54 @@ ModulePathfinding::~ModulePathfinding()
 	RELEASE_ARRAY(walkabilityMap);
 }
 
+bool ModulePathfinding::LineRayCast(iPoint& p0, iPoint& p1)
+{
+	BROFILER_CATEGORY("RayCast", Profiler::Color::Cornsilk);
+
+	std::vector <iPoint> line = CreateLine(p0, p1);
+
+	bool walkableFound = false;
+	bool currWalkability = false;
+
+	for (int i = 0; i < line.size(); i++)
+	{
+		currWalkability = IsWalkable(line[i]);
+
+		if (currWalkability && !walkableFound)
+			walkableFound = true;
+		else if (!currWalkability && walkableFound)
+			return false;
+	}
+
+
+	return true;
+}
+
+std::vector<iPoint> ModulePathfinding::CreateLine(const iPoint& p0, const iPoint& p1)
+{
+	last_line.clear();
+
+	float n = p0.DiagonalDistance(p1);
+
+	fPoint p0f = { (float)p0.x, (float)p0.y };
+	fPoint p1f = { (float)p1.x, (float)p1.y };
+
+	for (int step = 0; step <= n; step++)
+	{
+
+		float t = n == 0 ? 0.0 : step / n;
+
+		fPoint nextPointf = p0f.LerpPoint(p1f, t);
+		nextPointf.RoundPoint();
+
+		iPoint nextPoint = { (int)nextPointf.x, (int)nextPointf.y };
+		last_line.push_back(nextPoint);
+
+	}
+
+	return last_line;
+}
+
 bool ModulePathfinding::CleanUp()
 {
 	LOG("Freeing pathfinding library");
@@ -512,19 +560,8 @@ void HPAGraph::ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl)
 	for (int i = 0; i < c->clustNodes.size(); i++)
 	{
 		//To calculate the cost to the node peers, we should do A* and get the cost from there
-		//But since this is really expensive
-		if (i == 0)
-		{
-			distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos);
+		distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos);
 
-			if (distanceTo == -1)
-			{
-				node->edges.clear();
-				break;
-			}
-		}
-		else
-			distanceTo = node->pos.OctileDistance(c->clustNodes[i]->pos);
 
 		//Create the edges between the two nodes
 		node->edges.push_back(new Edge(c->clustNodes[i], distanceTo, lvl, EDGE_TYPE::INTRA));
@@ -1046,9 +1083,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 	iPoint startPos = { -1, -1 };
 
 	int from = -1;
-	int maxPath = lvl * CLUSTER_SIZE_LVL;
 	int pathSize = absPath->size();
-	PATH_DIR dir = PATH_DIR::DIR_NONE;
 
 	Cluster* fromC = nullptr;
 
@@ -1072,22 +1107,29 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 		if (fromC != absGraph.DetermineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
 		{
 
-			dir = IsStraightPath(startPos, currPos);
-
-			if (dir != PATH_DIR::DIR_NONE && !DoStraightPath(dir, pathToFill, startPos, currPos))
+			//First Quick Check w/Ray Cast
+			if (LineRayCast(startPos, currPos) && !last_line.empty())
 			{
-				SimpleAPathfinding(startPos, currPos);
+				generatedPath = &last_line;
 			}
-			else
-				SimpleAPathfinding(startPos, currPos);
 
-			generatedPath = &last_path;
+			//If the Ray Cast fails, we have to do A* to connect the nodes
+			else if (SimpleAPathfinding(startPos, currPos) && !last_path.empty())
+			{
+				generatedPath = &last_path;
+			}
 
-			if (pathToFill->size() > 1)
-				pathToFill->insert(pathToFill->end(), generatedPath->begin() + 1, generatedPath->end());
-			else
-				pathToFill->insert(pathToFill->end(), generatedPath->begin(), generatedPath->end());
+			//If the refinement was succesfull, we added to the request
+			if (generatedPath != nullptr)
+			{
 
+				//Last & not last cases:
+					//We don't want to introduce the first one since it will overlap with the last one already refined
+				if (pathToFill->size() > 1)
+					pathToFill->insert(pathToFill->end(), generatedPath->begin() + 1, generatedPath->end());
+				else
+					pathToFill->insert(pathToFill->end(), generatedPath->begin(), generatedPath->end());
+			}
 
 			absPath->erase(absPath->begin() + from, absPath->begin() + i);
 			break;
@@ -1102,185 +1144,6 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 	}
 
 	return generatedPath;
-}
-
-PATH_DIR ModulePathfinding::IsStraightPath(iPoint from, iPoint to)
-{
-	if (from.x == to.x)
-	{
-		if (from.y > to.y)
-			return PATH_DIR::DIR_VER_NEG;
-		else
-			return PATH_DIR::DIR_VER_POS;
-	}
-
-	if (from.y == to.y)
-	{
-		if (from.x > to.x)
-			return PATH_DIR::DIR_HOR_NEG;
-		else
-			return PATH_DIR::DIR_HOR_POS;
-	}
-
-
-	if (abs(from.x - to.x) == abs(from.y - to.y))
-	{
-		if (from.x > to.x && from.y > to.y)
-			return PATH_DIR::DIR_DIA_XY_NEG;
-
-		else if (from.x < to.x && from.y < to.y)
-			return PATH_DIR::DIR_DIA_XY_POS;
-
-		else if (from.x > to.x && from.y < to.y)
-			return PATH_DIR::DIR_DIA_X_NEG_Y_POS;
-
-		else if (from.x > to.x && from.y - to.y)
-			return PATH_DIR::DIR_DIA_Y_NEG_X_POS;
-	}
-
-
-	return PATH_DIR::DIR_NONE;
-}
-
-bool ModulePathfinding::DoStraightPath(PATH_DIR dir, std::vector<iPoint>* toFill, iPoint startPos, iPoint currPos)
-{
-	iPoint curr = { -1 ,-1 };
-	last_path.clear();
-
-	switch (dir)
-	{
-	case PATH_DIR::DIR_HOR_POS:
-	{
-		for (int i = startPos.x; i <= currPos.x; i++)
-		{
-			curr = { i, startPos.y };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-
-	}
-	break;
-	case PATH_DIR::DIR_HOR_NEG:
-	{
-		for (int i = startPos.x; i >= currPos.x; i--)
-		{
-			curr = { i, startPos.y };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-	}
-	break;
-	case PATH_DIR::DIR_VER_POS:
-	{
-		for (int i = startPos.y; i <= currPos.y; i++)
-		{
-			curr = { startPos.x, i };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-	}
-	break;
-	case PATH_DIR::DIR_VER_NEG:
-	{
-		for (int i = startPos.y; i >= currPos.y; i--)
-		{
-			curr = { startPos.x, i };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-	}
-	break;
-	case PATH_DIR::DIR_DIA_XY_POS:
-	{
-		for (int i = 0; startPos.x + i >= currPos.x; i++)
-		{
-			curr = { startPos.x + i, startPos.y + i };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-	}
-	break;
-	case PATH_DIR::DIR_DIA_XY_NEG:
-	{
-		for (int i = 0; startPos.x + i <= currPos.x; i--)
-		{
-			curr = { startPos.x + i, startPos.y + i };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-	}
-	break;
-	case PATH_DIR::DIR_DIA_X_NEG_Y_POS:
-	{
-		for (int i = 0; startPos.x + i <= currPos.x; i--)
-		{
-			curr = { startPos.x + i, startPos.y - i };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-	}
-	break;
-	case PATH_DIR::DIR_DIA_Y_NEG_X_POS:
-	{
-		for (int i = 0; startPos.x + i >= currPos.x; i++)
-		{
-			curr = { startPos.x + i, startPos.y - i };
-
-			if (IsWalkable(curr))
-				last_path.push_back(curr);
-			else
-			{
-				last_path.clear();
-				return false;
-			}
-		}
-	}
-	break;
-	}
-
-	return true;
 }
 
 

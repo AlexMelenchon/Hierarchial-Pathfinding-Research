@@ -233,6 +233,10 @@ public:
 	bool IsWalkable(const iPoint& pos) const;
 	uchar GetTileAt(const iPoint& pos) const;
 
+	bool LineRayCast(iPoint& p0, iPoint& p1);
+	std::vector<iPoint> CreateLine(const iPoint& p0, const iPoint& p1);
+
+
 	//Pathfinding Algorithms
 	//A*
 	float SimpleAPathfinding(const iPoint& origin, const iPoint& destination);
@@ -250,10 +254,10 @@ private:
 	int FindV(iPoint point, std::vector<PathNode>* vec);
 	int FindV(iPoint point, std::vector<HierNode>* vec);
 
+
+
 	//HPA Refining & Smoothing Tools
 	bool RefineAndSmoothPath(std::vector<iPoint>* absPath, int lvl, std::vector<iPoint>* refinedPath);
-	PATH_DIR IsStraightPath(iPoint from, iPoint to);
-	bool DoStraightPath(PATH_DIR dir, std::vector<iPoint>* toFill, iPoint startPos, iPoint currPos);
 
 
 public:
@@ -268,6 +272,7 @@ private:
 	uchar* walkabilityMap;
 
 	std::vector<iPoint> last_path;
+	std::vector<iPoint> last_line;
 
 	std::unordered_map <Entity*, generatedPath> generatedPaths;
 };

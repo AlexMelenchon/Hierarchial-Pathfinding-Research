@@ -59,4 +59,9 @@ inline const char* const PATH(const char* folder, const char* file)
 	return path;
 }
 
+template <class VALUE_TYPE> VALUE_TYPE  lerp(VALUE_TYPE& start, VALUE_TYPE& end, float t)
+{
+	return start + t * (end - start);
+}
+
 #endif

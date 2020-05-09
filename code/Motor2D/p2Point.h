@@ -156,6 +156,17 @@ public:
 		}
 	}
 
+	void RoundPoint()
+	{
+		x = round(x);
+		y = round(y);
+	}
+
+	p2Point LerpPoint(p2Point& p1, float t)
+	{
+		return  { lerp(x, p1.x, t), lerp(y, p1.y, t) };
+	}
+
 	// Distances ---------------------------------------------
 	TYPE DistanceTo(const p2Point& v) const
 	{
@@ -179,6 +190,12 @@ public:
 		int dy = abs(v.y - y);
 
 		return  max(dx, dy) + (0.41f) * min(dx, dy);
+	}
+
+	float DiagonalDistance(const p2Point& v) const
+	{
+		float dx = v.x - x, dy = v.y - y;
+		return (MAX(abs(dx), abs(dy)));
 	}
 
 	TYPE DistanceManhattan(const p2Point& v) const
