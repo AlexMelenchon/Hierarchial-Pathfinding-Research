@@ -235,6 +235,7 @@ public:
 
 	bool LineRayCast(iPoint& p0, iPoint& p1);
 	std::vector<iPoint> CreateLine(const iPoint& p0, const iPoint& p1);
+	std::vector<iPoint>* GetLastLine();
 
 
 	//Pathfinding Algorithms

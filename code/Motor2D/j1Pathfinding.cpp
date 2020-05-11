@@ -63,6 +63,11 @@ std::vector<iPoint> ModulePathfinding::CreateLine(const iPoint& p0, const iPoint
 	return last_line;
 }
 
+std::vector<iPoint>* ModulePathfinding::GetLastLine()
+{
+	return &last_line;
+}
+
 bool ModulePathfinding::CleanUp()
 {
 	LOG("Freeing pathfinding library");
@@ -323,6 +328,7 @@ void HPAGraph::CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 		//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
 		if (type == EDGE_TYPE::INTRA)
 		{
+
 			distanceTo = App->pathfinding->SimpleAPathfinding(n1->pos, n2->pos);
 		}
 
@@ -558,7 +564,13 @@ void HPAGraph::ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl)
 	for (int i = 0; i < c->clustNodes.size(); i++)
 	{
 		//To calculate the cost to the node peers, we should do A* and get the cost from there
-		distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos);
+		// But this is very slow, so we  will do a RayCast Check first; this is a little less accurate but far more faster
+		if (App->pathfinding->LineRayCast(node->pos, c->clustNodes[i]->pos))
+		{
+			distanceTo = App->pathfinding->GetLastLine()->size();
+		}
+		else
+			distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos);
 
 
 		//Create the edges between the two nodes
