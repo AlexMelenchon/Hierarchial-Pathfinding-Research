@@ -55,8 +55,8 @@ struct generatedPath
 
 //HPA*-------------------------------------------
 #define NODE_MIN_DISTANCE 5
-#define CLUSTER_SIZE_LVL 5
-#define MAX_LEVELS 2
+#define CLUSTER_SIZE_LVL 1
+#define MAX_LEVELS 20
 
 class HierNode;
 class Entity;
@@ -136,7 +136,7 @@ struct HPAGraph
 	//Graph Storage
 	std::vector <std::vector<Cluster>> lvlClusters;
 	std::vector <Entrance> entrances;
-	std::vector <HierNode*> nodes;
+	std::vector <HierNode*> staticNodes;
 
 	//PreProcessing
 	void PrepareGraph();
@@ -160,7 +160,7 @@ struct HPAGraph
 
 	//Utility
 	ADJACENT_DIR ClustersAreAdjacent(Cluster* c1, Cluster* c2, int lvl);
-	HierNode* NodeExists(iPoint pos, Cluster* lvl);
+	HierNode* NodeExists(iPoint pos, Cluster* lvl = nullptr);
 	bool EdgeExists(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type);
 	Cluster* DetermineCluster(iPoint nodePos, int lvl, Cluster* firstCheck = nullptr);
 

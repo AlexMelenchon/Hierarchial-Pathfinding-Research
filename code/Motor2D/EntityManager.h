@@ -5,6 +5,8 @@
 #include "Entity.h"
 #include <vector>
 
+class Entity;
+
 class j1EntityManager : public j1Module
 {
 	//FUNCTIONS
@@ -26,8 +28,9 @@ public:
 	bool CleanUp();
 
 	Entity* AddNewEntity(ENTITY_TYPE type, fPoint pos);
+	void CheckUnitsOnSelection(SDL_Rect selectRect);
+	bool CommandSelectedUnits(iPoint moveTo, int lvl);
 
-	void GetEntityNeighbours(std::vector<Entity*>* close_entity_list, std::vector<Entity*>* colliding_entity_list, Entity* thisUnit);
 
 public:
 	SDL_Texture* textures = nullptr;

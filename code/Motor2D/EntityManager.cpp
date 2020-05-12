@@ -2,6 +2,8 @@
 #include "j1App.h"
 #include "j1Textures.h"
 #include "p2Log.h"
+#include "Entity.h"
+#include "Collision.h"
 
 j1EntityManager::j1EntityManager()
 {}
@@ -62,6 +64,10 @@ bool j1EntityManager::PostUpdate()
 {
 	bool ret = true;
 
+	for (int i = 0; i < entities.size(); i++)
+	{
+		entities[i]->PostUpdate();
+	}
 
 	return ret;
 }
@@ -106,34 +112,51 @@ Entity* j1EntityManager::AddNewEntity(ENTITY_TYPE type, fPoint pos)
 	return entity;
 }
 
-void j1EntityManager::GetEntityNeighbours(std::vector<Entity*>* close_entity_list, std::vector<Entity*>* colliding_entity_list, Entity* thisUnit)
+void j1EntityManager::CheckUnitsOnSelection(SDL_Rect selection)
 {
-	close_entity_list->clear();
-	colliding_entity_list->clear();
+	int numEntities = entities.size();
 
-	Entity* it;
+	ENTITY_TYPE type;
 
-	for (int i = 0; i < entities.size(); ++i)
+	for (int i = 0; i < numEntities; i++)
 	{
+		fPoint entPos = entities[i]->GetPosition();
 
-		it = entities[i];
+		Collider col = { { (int)entPos.x, (int)entPos.y, 1, 1 } };
 
-		if (it != thisUnit)
+		if (col.CheckCollision(selection))
 		{
-			fPoint pos = it->GetPosition();
 
-			float distance = pos.DistanceTo(thisUnit->GetPosition());
-			if (distance < it->moveRange2)
-			{
-				colliding_entity_list->push_back(it);
-
-			}
-			if (distance < thisUnit->moveRange1)
-			{
-				close_entity_list->push_back(it);
-			}
+			entities[i]->selected = true;
+			entities[i]->color = { 255,0,0 };
+		}
+		else
+		{
+			entities[i]->selected = false;
+			entities[i]->color = { 255,255,255 };
 		}
 
 	}
+}
+
+bool j1EntityManager::CommandSelectedUnits(iPoint moveTo, int lvl)
+{
+	bool ret = false;
+	int numEntities = entities.size();
+
+	for (int i = 0; i < numEntities; i++)
+	{
+		if (entities[i]->selected == true)
+		{
+			entities[i]->GeneratePath(moveTo.x, moveTo.y, lvl);
+			ret = true;
+		}
+	}
+
+	return ret;
 
 }
+
+
+
+

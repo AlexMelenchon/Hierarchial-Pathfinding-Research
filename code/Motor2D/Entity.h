@@ -8,6 +8,8 @@
 struct Collider;
 struct SDL_Texture;
 
+#define ENTITY_SPEED 50
+
 enum class ENTITY_TYPE
 {
 	UNKNOWN,
@@ -38,40 +40,34 @@ public:
 	virtual bool Start();
 	virtual bool PreUpdate(float dt);
 	virtual bool Update(float dt);
-	virtual bool PostUpdate(float dt);
+	virtual bool PostUpdate();
 
-	virtual void CollisionPosUpdate();
-	virtual Collider* GetCollider() const;
 	void SetPosition(int x, int y);
 
 	fPoint GetPosition();
 
 	void SetToDelete(bool toDelete);
-	virtual void Draw(float dt);
 	void DebugDraw();
+
+	bool GeneratePath(int x, int y, int lvl);
+
 
 public:
 	bool toDelete;
-	int moveRange1, moveRange2;
+	bool selected;
+
+	SDL_Color color;
 
 protected:
 	fPoint position;
-	Collider* collider;
 	ENTITY_TYPE type;
-	fPoint speed;
 
 	iPoint origin, mouse;
 	std::vector <iPoint> path;
-	std::vector<Entity*> closeEntityList;
-	std::vector<Entity*> collidingEntityList;
+
 
 	bool Move(float dt);
-	bool GeneratePath(int x, int y);
 
-
-	fPoint GetDirectionSpeed(std::vector<Entity*>closeEntityList);
-	fPoint GetCohesionSpeed(std::vector<Entity*>closeEntityList, fPoint position);
-	fPoint GetSeparationSpeed(std::vector<Entity*>collidingEntityList, fPoint position);
 };
 
 #endif//__ENTITY_H__

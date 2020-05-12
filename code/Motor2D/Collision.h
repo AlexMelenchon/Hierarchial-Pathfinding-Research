@@ -26,7 +26,7 @@ struct Collider
 	j1Module* callback = nullptr;
 	Entity* thisEntity = nullptr;
 
-	Collider(SDL_Rect rectangle, COLLIDER_TYPE type, j1Module* callback = nullptr, Entity* thisEntity = nullptr) :
+	Collider(SDL_Rect rectangle, COLLIDER_TYPE type = COLLIDER_TYPE::COLLIDER_ENTITY, j1Module* callback = nullptr, Entity* thisEntity = nullptr) :
 		rect(rectangle),
 		type(type),
 		callback(callback),
@@ -40,6 +40,8 @@ struct Collider
 		thisEntity(thisEntity)
 
 	{}
+
+
 
 
 	void SetPos(int x, int y)

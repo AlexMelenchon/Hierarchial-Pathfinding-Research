@@ -33,7 +33,12 @@ public:
 	// Called before quitting
 	bool CleanUp();
 
+private:
+	void Select();
+	SDL_Texture* GetRandomTexture(int i);
 
+
+public:
 
 	SDL_Texture* debug_tex;
 	SDL_Texture* debug_texRed;
@@ -44,10 +49,7 @@ public:
 	SDL_Texture* debug_texYellow;
 	SDL_Texture* debug_texCyan;
 
-	SDL_Texture* debug_tex5x5;
 
-private:
-	SDL_Texture* GetRandomTexture(int i);
 
 private:
 	bool entrances = false;
@@ -60,6 +62,9 @@ private:
 	float updatePathTimer = 0.f;
 
 	int abstractDebugLvl = 0;
+
+	SDL_Rect selectRect;
+	iPoint clickPos;
 };
 
 #endif // __j1SCENE_H__

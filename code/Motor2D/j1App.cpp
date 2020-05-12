@@ -42,6 +42,7 @@ j1App::j1App(int argc, char* args[]) : argc(argc), args(args)
 	AddModule(win);
 	AddModule(tex);
 	AddModule(map);
+	AddModule(entMan);
 	AddModule(pathfinding);
 	AddModule(scene);
 

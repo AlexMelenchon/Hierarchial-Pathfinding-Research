@@ -8,6 +8,7 @@
 #include "j1Map.h"
 #include "j1PathFinding.h"
 #include "j1Scene.h"
+#include "EntityManager.h"
 #include "Brofiler/Brofiler/Brofiler.h"
 
 j1Scene::j1Scene() : j1Module()
@@ -42,6 +43,7 @@ bool j1Scene::Start()
 	}
 
 	debug_tex = App->tex->Load("maps/path2.png");
+	SDL_SetTextureAlphaMod(debug_tex, 255);
 
 	debug_texRed = App->tex->Load("maps/path2.png");
 	SDL_SetTextureColorMod(debug_texRed, 255, 0, 0);
@@ -69,7 +71,7 @@ bool j1Scene::PreUpdate()
 {
 
 	// debug pathfing ------------------
-	static iPoint origin;
+	static iPoint origin, mouse;
 	static bool origin_selected = false;
 
 	int x, y;
@@ -85,7 +87,7 @@ bool j1Scene::PreUpdate()
 		{
 			BROFILER_CATEGORY("HPA", Profiler::Color::DarkGreen);
 			absPath.clear();
-			App->pathfinding->CreatePath(origin, p, 2, nullptr);
+			App->pathfinding->CreatePath(origin, p, abstractDebugLvl + 1, nullptr);
 			origin_selected = false;
 		}
 		else
@@ -93,19 +95,37 @@ bool j1Scene::PreUpdate()
 			origin = p;
 			origin_selected = true;
 		}
+
+		clickPos = App->render->ScreenToWorld(x, y);
+
+
+	}
+	else if (App->input->GetMouseButtonDown(SDL_BUTTON_LEFT) == KEY_REPEAT)
+	{
+		Select();
+	}
+
+	else if (App->input->GetMouseButtonDown(SDL_BUTTON_LEFT) == KEY_UP)
+	{
+		selectRect = { 0,0,0,0 };
 	}
 
 	if (App->input->GetMouseButtonDown(SDL_BUTTON_RIGHT) == KEY_DOWN)
 	{
-		if (origin_selected == true)
+		bool movedAUnit = App->entMan->CommandSelectedUnits(p, abstractDebugLvl + 1);
+
+		if (origin_selected == true && !movedAUnit)
 		{
 			absPath.clear();
 			BROFILER_CATEGORY("A*", Profiler::Color::Gold);
 			App->pathfinding->CreatePath(origin, p, 0, nullptr);
 			App->pathfinding->RequestPath(nullptr, &absPath);
-			origin_selected = false;
+
 		}
+		origin_selected = false;
+
 	}
+
 
 	return true;
 }
@@ -113,11 +133,6 @@ bool j1Scene::PreUpdate()
 // Called each loop iteration
 bool j1Scene::Update(float dt)
 {
-	if (App->input->GetKey(SDL_SCANCODE_L) == KEY_DOWN)
-		App->LoadGame("save_game.xml");
-
-	if (App->input->GetKey(SDL_SCANCODE_S) == KEY_DOWN)
-		App->SaveGame("save_game.xml");
 
 	if (App->input->GetKey(SDL_SCANCODE_W) == KEY_REPEAT)
 		App->render->camera.y += 750 * dt;
@@ -158,7 +173,15 @@ bool j1Scene::Update(float dt)
 		App->map->nonWalkableDraw = !App->map->nonWalkableDraw;
 	}
 
-	
+	if (App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
+	{
+		int x, y;
+		App->input->GetMousePosition(x, y);
+		iPoint mousePos = App->render->ScreenToWorld(x, y);
+
+		if (App->pathfinding->IsWalkable(App->map->WorldToMap(mousePos.x, mousePos.y)))
+			App->entMan->AddNewEntity(ENTITY_TYPE::DYNAMIC, { (float)mousePos.x, (float)mousePos.y });
+	}
 
 	if (App->input->GetKey(SDL_SCANCODE_UP) == KEY_DOWN)
 	{
@@ -270,7 +293,7 @@ bool j1Scene::Update(float dt)
 					{
 						Edge* currEdge = currNode->edges[k];
 
-						if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl != abstractDebugLvl+1 || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl < abstractDebugLvl+1)
+						if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl != abstractDebugLvl + 1 || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl < abstractDebugLvl + 1)
 							continue;
 
 
@@ -331,6 +354,11 @@ bool j1Scene::PostUpdate()
 {
 	bool ret = true;
 
+
+	App->render->DrawQuad(selectRect, 0, 200, 0, 50, false);
+	App->render->DrawQuad(selectRect, 0, 200, 0, 100);
+
+
 	if (App->input->GetKey(SDL_SCANCODE_ESCAPE) == KEY_DOWN)
 		ret = false;
 
@@ -385,4 +413,44 @@ SDL_Texture* j1Scene::GetRandomTexture(int i)
 
 
 	return ret;
+}
+
+void j1Scene::Select()
+{
+	int x, y;
+	App->input->GetMousePosition(x, y);
+	iPoint mousePosition = App->render->ScreenToWorld(x, y);
+
+	int rectX;
+	int rectY;
+	int rectW;
+	int rectH;
+
+	if (mousePosition.x > clickPos.x)
+	{
+		rectX = clickPos.x;
+	}
+	else
+	{
+		rectX = mousePosition.x;
+	}
+
+	rectW = abs(mousePosition.x - clickPos.x);
+
+	if (mousePosition.y > clickPos.y)
+	{
+		rectY = clickPos.y;
+	}
+	else
+	{
+		rectY = mousePosition.y;
+	}
+
+	rectH = abs(mousePosition.y - clickPos.y);
+
+	selectRect = { rectX,rectY, rectW,rectH };
+
+
+	App->entMan->CheckUnitsOnSelection(selectRect);
+
 }

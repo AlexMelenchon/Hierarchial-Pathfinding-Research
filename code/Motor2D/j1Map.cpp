@@ -129,8 +129,8 @@ iPoint j1Map::WorldToMap(int x, int y) const
 		
 		float half_width = data.tile_width * 0.5f;
 		float half_height = data.tile_height * 0.5f;
-		ret.x = int( (x / half_width + y / half_height) / 2) - 1;
-		ret.y = int( (y / half_height - (x / half_width)) / 2);
+		ret.x = round( (x / half_width + y / half_height) / 2) - 1;
+		ret.y = round( (y / half_height - (x / half_width)) / 2);
 	}
 	else
 	{

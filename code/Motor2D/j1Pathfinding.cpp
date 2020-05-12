@@ -21,16 +21,13 @@ bool ModulePathfinding::LineRayCast(iPoint& p0, iPoint& p1)
 
 	std::vector <iPoint> line = CreateLine(p0, p1);
 
-	bool walkableFound = false;
 	bool currWalkability = false;
 
 	for (int i = 0; i < line.size(); i++)
 	{
 		currWalkability = IsWalkable(line[i]);
 
-		if (currWalkability && !walkableFound)
-			walkableFound = true;
-		else if (!currWalkability && walkableFound)
+		if (!currWalkability)
 			return false;
 	}
 
@@ -92,19 +89,19 @@ bool ModulePathfinding::CleanUp()
 
 
 	//Nodes Clear
-	for (int i = 0; i < absGraph.nodes.size(); i++)
+	for (int i = 0; i < absGraph.staticNodes.size(); i++)
 	{
-		for (int j = 0; j < absGraph.nodes[i]->edges.size(); j++)
+		for (int j = 0; j < absGraph.staticNodes[i]->edges.size(); j++)
 		{
-			delete absGraph.nodes[i]->edges.at(j);
-			absGraph.nodes[i]->edges.at(j) = nullptr;
+			delete absGraph.staticNodes[i]->edges.at(j);
+			absGraph.staticNodes[i]->edges.at(j) = nullptr;
 		}
-		absGraph.nodes[i]->edges.clear();
+		absGraph.staticNodes[i]->edges.clear();
 
-		delete absGraph.nodes[i];
-		absGraph.nodes[i] = nullptr;
+		delete absGraph.staticNodes[i];
+		absGraph.staticNodes[i] = nullptr;
 	}
-	absGraph.nodes.clear();
+	absGraph.staticNodes.clear();
 
 
 
@@ -220,6 +217,7 @@ void HPAGraph::createInterNodes(int lvl)
 
 			for (int i = currEntrance->pos.x; i < maxSize; i += NODE_MIN_DISTANCE)
 			{
+				//if (!NodeExists({ i+1, currEntrance->pos.y }) && !NodeExists({ currEntrance->pos.x,i - 1 }))
 				BuildInterNode({ i, currEntrance->pos.y }, c1, { i, currEntrance->pos.y + 1 }, c2, lvl);
 			}
 
@@ -246,7 +244,7 @@ void HPAGraph::BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, in
 	if (!n1)
 	{
 		n1 = new HierNode(p1);
-		nodes.push_back(n1);
+		staticNodes.push_back(n1);
 	}
 
 	//If doesn't exist in the current cluster, introduce it
@@ -261,7 +259,7 @@ void HPAGraph::BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, in
 	if (!n2)
 	{
 		n2 = new HierNode(p2);
-		nodes.push_back(n2);
+		staticNodes.push_back(n2);
 	}
 
 	if (NodeExists(p2, c2) == nullptr)
@@ -297,10 +295,10 @@ HierNode* HPAGraph::NodeExists(iPoint pos, Cluster* c)
 {
 	if (c == nullptr)
 	{
-		for (int i = 0; i < nodes.size(); i++)
+		for (int i = 0; i < staticNodes.size(); i++)
 		{
-			if (pos == nodes[i]->pos)
-				return nodes[i];
+			if (pos == staticNodes[i]->pos)
+				return staticNodes[i];
 		}
 	}
 	else
@@ -635,25 +633,23 @@ void HPAGraph::deleteNode(HierNode* toDelete, int lvl)
 					break;
 				}
 			}
-			toDeletePos = i;
+
+			if (c->clustNodes[i] == toDelete)
+				c->clustNodes.erase(c->clustNodes.begin() + i);
 
 		}
 
 		//Deletes the node from the cluster
-		if (toDeletePos != -1)
+
+		for (int j = 0; j < toDelete->edges.size(); j++)
 		{
-
-			for (int j = 0; j < toDelete->edges.size(); j++)
-			{
-				c->clustNodes[toDeletePos]->edges[j]->dest = nullptr;
-				delete c->clustNodes[toDeletePos]->edges[j];
-
-			}
-
-			c->clustNodes.erase(c->clustNodes.begin() + toDeletePos);
-			toDelete->edges.clear();
-			delete toDelete;
+			toDelete->edges[j]->dest = nullptr;
+			delete toDelete->edges[j];
 		}
+
+		toDelete->edges.clear();
+		delete toDelete;
+
 
 	}
 
@@ -1135,12 +1131,13 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 
 				//Last & not last cases:
 					//We don't want to introduce the first one since it will overlap with the last one already refined
-				if (pathToFill->size() > 1)
+				if (pathToFill->size() > 0)
 					pathToFill->insert(pathToFill->end(), generatedPath->begin() + 1, generatedPath->end());
 				else
 					pathToFill->insert(pathToFill->end(), generatedPath->begin(), generatedPath->end());
 			}
 
+			//Delete the abstract nodes we just refined
 			absPath->erase(absPath->begin() + from, absPath->begin() + i);
 			break;
 		}
