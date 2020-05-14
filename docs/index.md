@@ -546,3 +546,4 @@ struct HPAGraph
 - **[2]**: another option is to pre-calculate all of this and then load it when the map is calculated (this includes Entrances, Clusters, Nodes & Edges); but since our project is small, I decided to do it this way.
 - **[3]**:  you could have a different approach in how you make the Clusters size (irregular is always an option) but you can have it be x2 larger than the previous one, etc.
 - **[4]**:  This is inspired by the HNA* method; which basically makes the Clusters moldable to terrain, not the Entrances. If you wanna know more check out [THIS](https://web.archive.org/web/20190725152735/http://aigamedev.com/open/tutorials/clearance-based-pathfinding/)
+
