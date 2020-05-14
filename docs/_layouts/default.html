@@ -19,7 +19,7 @@
 </head>
 <body>
 
-    <nav>
+    <nav id="index">
         <ul></ul>
     </nav>
 
@@ -104,7 +104,7 @@
         $(this).attr("id",$(this).text().toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g,''));
         $("nav ul li:first-child a").parent().addClass("active");
         }
-
+        console.log($(this).prop("tagName"))
 
         });
 
