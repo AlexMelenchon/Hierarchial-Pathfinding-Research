@@ -20,10 +20,10 @@ As I was saying, this is very usefull for Videogames, since most of the times kn
 Right of the bat. this sounds really good but there is one key disadvantage: this does not create optimal paths but, for real-time pathfinding applications such as Videogames, this is not a huge problem most of the times, provinding the path looks reasonable.
 
 <p align="right">
-<img src="https://github.com/AlexMelenchon/Hierarchial-Pathfinding-Research/blob/master/docs/images/hpaGraph.jpg" >
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/hpaGraph.jpg >
 </p>
 
-This image of the Indie Developer [K Lodeman] (https://twitter.com/ManOfLode/status/854406316890128384) shows how the Hierchy principe works; the huge map is divided into shorter steps in order to then refine the path.
+This image of the Indie Developer [K Lodeman](https://twitter.com/ManOfLode/status/854406316890128384) shows how the Hierchy principe works; the huge map is divided into shorter steps in order to then refine the path.
 
 ## Ways of implementation
 First of all, there aren't static religious ways to implement the Hierarchial Pathfinding (let's call it HP for now) because it's not an algorithm. We could say it's a "technique" to divide the map so the desired Pathfinding Algorithm has an easier time construction the abstract & refined paths.
