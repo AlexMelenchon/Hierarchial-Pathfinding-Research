@@ -266,44 +266,46 @@ struct HPAGraph
   -  All right, the last of the major agents. The Edges are also simple. They just store it's type (that remeber, can be INTER o INTRA), the destination Node (which is the Node this connection points to) & the amount that Cost going to that Node (in A* terms, the g).
   
 - The Code flow & Functions:
+
   -Basically the code flows like this:
+  
  ```cpp   
-  MapLoad()
-  {
-    HPAGraph absGraph;
-  
-  	HPAPreProcessing(MAX_LEVELS);
-  }
-  
-  
-  void HPAPreProcessing(int maxLevel)
-  {
-    absGraph.PrepareGraph();
+	  MapLoad()
+	  {
+	    HPAGraph absGraph;
 
-    for (int l = 2; l <= maxLevel; l++)
-    {
-      absGraph.CreateGraphLvl(l);
-    }
-    
-  }
+		HPAPreProcessing(MAX_LEVELS);
+	  }
 
-  void PrepareGraph()
-  {
 
-    BuildClusters(1);
-    BuildEntrances();
+	  void HPAPreProcessing(int maxLevel)
+	  {
+	    absGraph.PrepareGraph();
 
-    CreateInterNodes(1);
-    CreateIntraNodes(1);
-  }
+	    for (int l = 2; l <= maxLevel; l++)
+	    {
+	      absGraph.CreateGraphLvl(l);
+	    }
 
-  void CreateGraphLvl(int lvl)
-  {
-    BuildClusters(lvl);
+	  }
 
-    CreateInterNodes(lvl);
-    CreateIntraNodes(lvl);
-  }
+	  void PrepareGraph()
+	  {
+
+	    BuildClusters(1);
+	    BuildEntrances();
+
+	    CreateInterNodes(1);
+	    CreateIntraNodes(1);
+	  }
+
+	  void CreateGraphLvl(int lvl)
+	  {
+	    BuildClusters(lvl);
+
+	    CreateInterNodes(lvl);
+	    CreateIntraNodes(lvl);
+	  }
   
 ```
 
