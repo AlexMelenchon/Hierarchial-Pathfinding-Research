@@ -70,17 +70,326 @@ With this said, let's see the principles that the "hierchy graph must follow" in
 
   ### Different Approaches
 
-
  - **Different Algorithms**:
     - I have not mentioned this because I didn't want to bias anyone, but the Hierchial method is often used as an upgrade of the A* pathfinding algorithm (if you need a quick A* reminder, there is a very nice & concise article in  [Red Blob Games](https://www.redblobgames.com/pathfinding/a-star/introduction.html) but, as I said it can be used for any other algorithm; for example [this paper](https://www.cs.ru.nl/bachelors-theses/2013/Linus_van_Elswijk___0710261___Hierarchical_Path-Finding_Theta_star_Combining_HPA_star_and_Theta_star.pdf) implements it in a variation of A*, called Theta*.
     
     
     > Theta* is basically A* with a Jump Point Search implemented; if you wanna know more about JPS*, there is a very nice research from my colleague, [Lucho Suaya](https://www.linkedin.com/in/luchosuaya/) [HERE](https://lucho1.github.io/JumpPointSearch/); which I took as reference & inspiration to make the document you are reading right now.
     
-   - **Dynamic Approach**: you can also get the Hierchy to work with dynamic objects & make it recalculate paths whenever a path gets interrupted, being in the need of handling multiple agents that request a path in a very large world full of interesting obstacles (such as stairs, mazes, etc.). There is a very cool GDC presentation about  this implementation by Alain Benoit, Lead Programmer and CTO (Chief Technology Officer) of [Sauropod Studio](https://www.sauropodstudio.com/english-1) in their game [Castle Story](http://www.castlestory.net/). You can find the 2018 GDC presentation [HERE](https://twvideo01.ubm-us.net/o1/vault/gdc2018/presentations/Alain_Benoit_HierarchicalDynamicPathfinding.pdf).
+  - **Dynamic Approach**:  
+    - You can also get the Hierchy to work with dynamic objects & make it recalculate paths whenever a path gets interrupted, being in the need of handling multiple agents that request a path in a very large world full of interesting obstacles (such as stairs, mazes, etc.). There is a very cool GDC presentation about  this implementation by Alain Benoit, Lead Programmer and CTO (Chief Technology Officer) of [Sauropod Studio](https://www.sauropodstudio.com/english-1) in their game [Castle Story](http://www.castlestory.net/). You can find the 2018 GDC presentation [HERE](https://twvideo01.ubm-us.net/o1/vault/gdc2018/presentations/Alain_Benoit_HierarchicalDynamicPathfinding.pdf).
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Voxel_hier2.png"  width="60%" height="60%">
+</p>
    
+  - **Irregular Graphs** (or navigation meshes): 
+    - Of course I must mention this, note that the agents that I have explained in the previous sections is partially a lie. This research is focused for general HP implementation and so, the explanation will be about making a regulat-all purpose graph; but a very common approach in Videogames & Game Engines is to create a custom navigation mesh for our levels; but the approach is the same: instead of having Entrances, we will define the nodes as we consider & we calculate the edges beween the nodes. Then we can abstractly connect the nodes & make the algorithm run raw to refine the lower level path or we can also refine clusters to improve the refinement.
+   This provides much more path stability, we make sure of how dense we want the map to be in certain areas, etc. The main problem is that is not computer-generated but human generated and that takes a lot of time & effort.
    
+   <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/multiple_iregular_graph.jpg">
+</p>
+
+   > An example of multiple leveled navigation grid, with irregular nodes & clusters.
+
+   <p align="center">
+<img src="https://github.com/AlexMelenchon/Hierarchial-Pathfinding-Research/blob/master/docs/images/200KoboldPaths.png"  width="60%" height="60%">
+</p>
+
+   > An example of multiple leveled navigation grid, with irregular nodes but regular clusters.
 
     
+ >If you wanna know more about how to implement & manipulate Navigation Meshes into a Hierachy and also memory & refinement optimizations, you can check out the [2011 GDC aabout Starcraft II & Dragon Age Origins](https://www.gdcvault.com/play/1014514/AI-Navigation-It-s-Not). 
+ 
+ >**Important Note**:Navigation Meshes is  a very cool & interesting topic to explore, but in this reseach I want to focus more in the basics of the Hierchial Pathfinding, since, I am a big believer that, if you understand the basics (ergo, what I am about to explain) who will know how the Navigatio Maps & Meshes work way faster &, also, since you will know what is happening in the lowest level, you will also understand the optimizations or came up with your own!
+
+  ### My Approach - HPA*
+Tho approach I selected is to do a **Regular Multi-Level Hierarchy A***. The reason is simple and I have already mentioned before: I want this to be an explanation so you will understand how & why a Hiearchial Pathfinding works, so let's start from the basic, shall we?
+
+#### Code Structures
+ - The Abstract Graph structure:
+ 
+ ```cpp
+struct HPAGraph
+{
+	//Graph Storage
+	std::vector <std::vector<Cluster>> lvlClusters; //We will store all the Clusters of a level in this vector. Each level, will be an instance of the vector that will conain all the clusters
+	std::vector <Entrance> entrances;
+	std::vector <HierNode*> staticNodes;
+
+	//PreProcessing
+	void PrepareGraph();
+	void CreateGraphLvl(int lvl);
+
+	//Building Inner Structures: 
+		//Build is for logic determination & creation of all the elements of the structure
+		//Create is for the creation of a single object
+	void BuildClusters(int lvl);
+
+	void BuildEntrances();
+	void CreateEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
+
+	void BuildInterNode(iPoint n1, Cluster* c1, iPoint n2, Cluster* c2, int lvl);
+	void CreateInterNodes(int lvl);
+
+	void CreateIntraNodes(int lvl);
+
+	void CreateEdges(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type);
 
 
+	//Utility
+	ADJACENT_DIR ClustersAreAdjacent(Cluster* c1, Cluster* c2, int lvl); //Checks if two clusters are adjacent
+	HierNode* NodeExists(iPoint pos, Cluster* lvl = nullptr); //Checks if a Node exists in the whole graph or just in a concrete Cluster
+	bool EdgeExists(HierNode* from, HierNode* to, int lvl, EDGE_TYPE type); // Check if an Edge between two Nodes Exist
+	Cluster* DetermineCluster(iPoint nodePos, int lvl, Cluster* firstCheck = nullptr); //Determines the Cluster in whick a Node is in.
+
+	//Node Insertion
+	HierNode* insertNode(iPoint pos, int lvl, bool* toDelete = nullptr); //Insert a Node into the Graph
+	void DeleteNode(HierNode* toDelete, int lvl); //Deletes a Node from the Graph
+	void ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl); //Connects a Node to all the Nodes in the same Cluster
+
+};
+
+```
+  - Explanation:
+    - As you can see, we will store in memory the **Clusters** for each level, the **Entrances** (we will have enttrances, since it is a regular graph) & the **Nodes of the Hiearchy** (The Nodes are stored here, but note that each cluster has a vector of pointers to it's nodes, in order to have a better time searching)
+    
+    - Let's take a further look into the Containers Structures:
+    
+  ```cpp   
+    struct Cluster
+{
+	Cluster();
+	Cluster(int width, int height, iPoint& pos);
+	Cluster(const Cluster& clust);
+
+	iPoint pos;
+	int width, height;
+
+	std::vector <HierNode*> clustNodes;
+};
+
+```
+  - The Cluster is simple, it's just stores it's position & size. But take note, each Cluster has a vector of the Nodes that are inside him; this is done in order to prevent two things:
+    - This makes the code faster, since we don't have to check every node in the Graph, just to ones inside the same Cluster.
+    - In order to have multi-level search, the Nodes must store it's level. This makes the pathfinding go slower, since we have to instance one more variable. My work arround for this is to have the clusters already separated in levels by their position in the vector of Cluster vecotrs (Ex. lvlClusters[N] stores all the Clusters in the N+1 level, beign 0 the non-abstract level). This way we don't have all the Clusters & Nodes in the same place, but have a little of structure.
+
+    
+  ```cpp   
+  enum class ADJACENT_DIR
+{
+	DIR_NONE = -1,
+
+	VERTICAL,
+	LATERAL
+};
+
+struct Entrance
+{
+	Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir);
+	Entrance();
+
+	iPoint pos;
+	int width, height;
+
+	ADJACENT_DIR dir;
+
+};
+
+```
+  - The entrances are also quite simple; the same way  Clusters do, they store position & size but, also, store the direction that they are connecting (This is LATERAL or VERTICAL).
+
+  ```cpp   
+class PathNode
+{
+public:
+	PathNode();
+	PathNode(float g, float h, const iPoint& pos, PathNode* parent, int parentdir, int myDir, bool isdiagonal = false);
+	PathNode(const PathNode& node);
+
+	virtual uint FindWalkableAdjacents(std::vector<PathNode>& list_to_fill);
+	virtual float CalculateF(const iPoint& destination);
+	float Score() const;
+
+	float g;
+	float h;
+	iPoint pos;
+
+	PathNode* parent;
+
+	int parentDir;
+	int myDirection;
+	bool is_Diagonal;
+
+};
+
+//HPA* Nodes
+class HierNode : public PathNode
+{
+public:
+	HierNode(iPoint pos);
+	HierNode(iPoint pos, bool tmp);
+	HierNode(float g, const iPoint& pos, PathNode* parent, int myDir, int parentdir, std::vector<Edge*> edges);
+
+	float CalculateF(const iPoint& destination);
+	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl);
+
+	std::vector <Edge*> edges;
+};
+```
+  - The Nodes (called HierNodes here) need a little bit more of explanation:
+    - First of all we have the PathNodes, which are regular A* nodes that indicate a tile in the non-abstract level (with your typical A* stuff)
+    - Then we have the Hiernodes, which are a class that inherits from PathNode; since, at the end, both are the same. There are two key diferences though:
+      - Some functions are overrided from the PathNode, since they are different (we will get to that later)
+      - All the HierNodes store a vector of pointers of Edges (which are the connections between Nodes we discussed before).
+      
+  ```cpp   
+  struct Edge
+{
+	Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type);
+
+	void UpdateLvl(int lvl)
+	{
+		this->lvl = lvl;
+	}
+
+	HierNode* dest;
+	float moveCost;
+
+	int lvl;
+	EDGE_TYPE type;
+
+};
+```
+  -  All right, the last of the major agents. The Edges are also simple. They just store it's type (that remeber, can be INTER o INTRA), the destination Node (which is the Node this connection points to) & the amount that Cost going to that Node (in A* terms, the g).
+  
+- The Code flow & Functions:
+  -Basically the code flows like this:
+  ```cpp   
+  MapLoad()
+  {
+    HPAGraph absGraph;
+  
+  	HPAPreProcessing(MAX_LEVELS);
+  }
+  
+  
+  void HPAPreProcessing(int maxLevel)
+  {
+    absGraph.PrepareGraph();
+
+    for (int l = 2; l <= maxLevel; l++)
+    {
+      absGraph.CreateGraphLvl(l);
+    }
+    
+  }
+
+  void PrepareGraph()
+  {
+
+    BuildClusters(1);
+    BuildEntrances();
+
+    CreateInterNodes(1);
+    CreateIntraNodes(1);
+  }
+
+  void CreateGraphLvl(int lvl)
+  {
+    BuildClusters(lvl);
+
+    CreateInterNodes(lvl);
+    CreateIntraNodes(lvl);
+  }
+  
+  ```
+  - Basically what we do here is to create the first level of the Graph: with it's Entrances, Clusters, Nodes & Conections. Then for subsuquent levels we just create the Clusters, the Nodes & their Connections. [1]
+  - For better illustration, let's simluate a Graph Construction step by step. Let's say we start from this map:
+  - Be noted that everything is calculated when we load a new map. [2
+  
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Map.png"  width="60%" height="60%">
+</p>
+
+   > Being the white tiles walkable & the black ones non-alkable
+   
+- Alright, let's now have a look at the Cluster Build Code & see how it affects our map:
+
+    ```cpp   
+  void BuildClusters(int lvl)
+  {
+    int clustSize = CLUSTER_SIZE_LVL * lvl;
+
+    //Buffer vector
+    vector <Cluster> clusterVector;
+
+    Cluster c;
+
+    //We will create the cluster in a row-column order
+    for (int i = 0; i < mapWidth , i += clustSize)
+    {
+
+      if (i + clustSize > width)
+        c.width = width - (i);
+      else
+        c.width = clustSize;
+
+      for (int k = 0; k < mapHeight, k += clustSize)
+      {
+
+        if (k + clustSize > height)
+          c.height = height - (k);
+        else
+          c.height = clustSize;
+
+        c.pos = { i,k };
+        clusterVector.push_back(Cluster(c));
+      }
+    }
+
+
+    lvlClusters.push_back(clusterVector);
+  }
+  ``
+ - This function is a simple double for that iterates the map & creates the Clusters but I want to point out one thig:
+  - The approach I used to make the Clusters regular is define an arbritary constant (CLUSTER_SIZE_LVL) & make each level so it's Clusters are this constant bigger than the previous ones. [2]
+  
+- Let's take a look on the Map & see how it has changed:
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Clusters.png"  width="60%" height="60%">
+</p>
+
+> As you can see, now the Map has division of Clusters that group tiles from the non-abstract level. Note that if we added another Graph Level, it would create another Clusters double the size.
+
+- Let's take a closer look into the Structure Building pseudocode:
+
+    ```cpp   
+  void BuildEntrances()
+  {
+      for (each clust1, clust2 ∈ lvlClusters[0]) 
+      {
+        if ClustersAreAdjacent(clust1, clust2, 1)
+         CreateEntrance(clust1, clust2, adjacentDir, 1);
+      }
+  }
+
+  ``
+ - We just iterate the clusters and find the adjacent ones; between them we will create the entrances. Check the CreateEntrances() method for more info but basically what it does is create an Entrance for each group of consecutive walkable tiles. [4]
+ 
+ - Let's zoom-in at the top-left corner of the map and see how it has changed:
+ 
+ 
+<p align="center">
+<img src="https://github.com/AlexMelenchon/Hierarchial-Pathfinding-Research/blob/master/docs/images/Entrances_Draw.png"  width="60%" height="60%">
+</p>
+  
+  > Great! The yellow rectangles represent the entrances between the Clusters, but something weird happened. Some Nodes are grey & have weird lines between them; let's figure out what this is!
+  
+### Possible Improvements & Changes
+ [1] : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
+[2]: another option is to pre-calculate all of this and then load it when the map is calculated (this includes Entrances, Clusters, Nodes & Edges); but since our project is small, I decided to do it this way.
+[3]:  you could have a different approach in how you make the Clusters size (irregular is always an option) but you can have it be x2 larger than the previous one, etc.
+[4]:  This is inspired by the HNA* method; which basically makes the Clusters moldable to terrain, not the Entrances. If you wanna know more check out [THIS] (https://web.archive.org/web/20190725152735/http://aigamedev.com/open/tutorials/clearance-based-pathfinding/)
