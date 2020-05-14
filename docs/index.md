@@ -20,7 +20,7 @@ As I was saying, this is very usefull for Videogames, since most of the times kn
 Right of the bat. this sounds really good but there is one key disadvantage: this does not create optimal paths but, for real-time pathfinding applications such as Videogames, this is not a huge problem most of the times, provinding the path looks reasonable.
 
 <p align="right">
-<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/hpaGraph.jpg >
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/hpaGraph.jpg" >
 </p>
 
 This image of the Indie Developer [K Lodeman](https://twitter.com/ManOfLode/status/854406316890128384) shows how the Hierchy principe works; the huge map is divided into shorter steps in order to then refine the path.
@@ -68,7 +68,7 @@ With this said, let's see the principles that the "hierchy graph must follow" in
 
 ***
 
-  ### Different Approaches
+ ### Different Approaches
 
  - **Different Algorithms**:
     - I have not mentioned this because I didn't want to bias anyone, but the Hierchial method is often used as an upgrade of the A* pathfinding algorithm (if you need a quick A* reminder, there is a very nice & concise article in  [Red Blob Games](https://www.redblobgames.com/pathfinding/a-star/introduction.html) but, as I said it can be used for any other algorithm; for example [this paper](https://www.cs.ru.nl/bachelors-theses/2013/Linus_van_Elswijk___0710261___Hierarchical_Path-Finding_Theta_star_Combining_HPA_star_and_Theta_star.pdf) implements it in a variation of A*, called Theta*.
@@ -94,7 +94,7 @@ With this said, let's see the principles that the "hierchy graph must follow" in
    > An example of multiple leveled navigation grid, with irregular nodes & clusters.
 
    <p align="center">
-<img src="https://github.com/AlexMelenchon/Hierarchial-Pathfinding-Research/blob/master/docs/images/200KoboldPaths.png"  width="60%" height="60%">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/200KoboldPaths.png"  width="60%" height="60%">
 </p>
 
    > An example of multiple leveled navigation grid, with irregular nodes but regular clusters.
@@ -104,7 +104,7 @@ With this said, let's see the principles that the "hierchy graph must follow" in
  
  >**Important Note**:Navigation Meshes is  a very cool & interesting topic to explore, but in this reseach I want to focus more in the basics of the Hierchial Pathfinding, since, I am a big believer that, if you understand the basics (ergo, what I am about to explain) who will know how the Navigatio Maps & Meshes work way faster &, also, since you will know what is happening in the lowest level, you will also understand the optimizations or came up with your own!
 
-  ### My Approach - HPA*
+### My Approach - HPA*
 Tho approach I selected is to do a **Regular Multi-Level Hierarchy A***. The reason is simple and I have already mentioned before: I want this to be an explanation so you will understand how & why a Hiearchial Pathfinding works, so let's start from the basic, shall we?
 
 #### Code Structures
@@ -157,7 +157,7 @@ struct HPAGraph
     
     - Let's take a further look into the Containers Structures:
     
-  ```cpp   
+```cpp   
     struct Cluster
 {
 	Cluster();
@@ -176,7 +176,7 @@ struct HPAGraph
     - In order to have multi-level search, the Nodes must store it's level. This makes the pathfinding go slower, since we have to instance one more variable. My work arround for this is to have the clusters already separated in levels by their position in the vector of Cluster vecotrs (Ex. lvlClusters[N] stores all the Clusters in the N+1 level, beign 0 the non-abstract level). This way we don't have all the Clusters & Nodes in the same place, but have a little of structure.
 
     
-  ```cpp   
+```cpp   
   enum class ADJACENT_DIR
 {
 	DIR_NONE = -1,
@@ -200,7 +200,7 @@ struct Entrance
 ```
   - The entrances are also quite simple; the same way  Clusters do, they store position & size but, also, store the direction that they are connecting (This is LATERAL or VERTICAL).
 
-  ```cpp   
+ ```cpp   
 class PathNode
 {
 public:
@@ -366,7 +366,7 @@ public:
 
 - Let's take a closer look into the Structure Building pseudocode:
 
-    ```cpp   
+```cpp   
   void BuildEntrances()
   {
       for (each clust1, clust2 ∈ lvlClusters[0]) 
@@ -376,7 +376,7 @@ public:
       }
   }
 
-  ``
+```
  - We just iterate the clusters and find the adjacent ones; between them we will create the entrances. Check the CreateEntrances() method for more info but basically what it does is create an Entrance for each group of consecutive walkable tiles. [4]
  
  - Let's zoom-in at the top-left corner of the map and see how it has changed:
@@ -454,12 +454,12 @@ public:
 			}
 		}
 	}
-  ```
+ ```
   
    - This is how the Nodes are created:
    	-INTER: The simply get every Entrance & for an Arbritary Number that we define (NODE_MIN_DISTANCE) we put a Pair of Nodes in each side of the Entrance &, to indicate that they will be INTER Nodes, we build an Edge between them (Edges Explanation Next)
     	-INTRA: simply iterate through all the Nodes in a same Cluster & Connect them via A*.
-  ```cpp
+```cpp
   	void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 {
 	float distanceTo = 1.f;
@@ -488,7 +488,7 @@ public:
 	}
 
 }
-   ```
+```
    - Just a thing to point here; note that we check if the EdgeExists (& if so we don't make another one) just for the INTER edges, we always create the INTRA edges. This has an explanation:
    	- For Multiple-Level Search: we have to Level Up the existent Edges in order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
 	
@@ -501,7 +501,7 @@ public:
 #### Search & Refinement Process
 - With all the structures made Just lasts to do the Path:
 	- Hierarchical Search:
-    ```cpp
+```cpp
     PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl)
 	{
 		n1 = absGraph.insertNode(origin, maxLvl, &toDeleteN1);
@@ -523,7 +523,7 @@ public:
 		if (toDeleteN2)
 			absGraph.DeleteNode((HierNode*)n2, maxLvl);
 	}
-   ```
+```
   
 ### Possible Improvements & Changes
 - **[1]** : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
