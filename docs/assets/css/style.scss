@@ -4,25 +4,26 @@
 @import "{{ site.theme }}";
 
 .wrapper {
-    max-width: 1300px;
+    max-width: 1200px;
 }
 section {
     max-width: unset;
 }
 
 #header nav {
-    max-width: 1300px;
+    max-width: 1200px;
 }
 
 #index {
     z-index: 99;
-    padding-top: 20px;
+    padding: 20px;
     position: fixed;
     top: 25%;
     background: url(../images/nav-bg.gif) #353535;
-    width: 287px;
+    width: 300px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     border: 2px solid;
+    border-left: unset !important;
 }
 
