@@ -1,5 +1,6 @@
 ---
 ---
+
 @import "{{ site.theme }}";
 
 .wrapper {
@@ -7,4 +8,8 @@
 }
 section {
     max-width: unset;
+}
+
+#header nav {
+    max-width: 1300px;
 }
