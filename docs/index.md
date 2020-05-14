@@ -387,9 +387,146 @@ public:
 </p>
   
   > Great! The yellow rectangles represent the entrances between the Clusters, but something weird happened. Some Nodes are grey & have weird lines between them; let's figure out what this is!
+```cpp  
+	  void CreateInterNodes(int lvl)
+	{
+		for (each entrance)
+		{
+			switch (currEntrance->dir)
+			{
+			case ADJACENT_DIR::LATERAL:
+			{
+				c1 = DetermineCluster(currEntrance->pos, lvl);
+				c2 = DetermineCluster({ currEntrance->pos.x + 1, currEntrance->pos.y }, lvl);
+
+				if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
+					continue;
+
+
+				int maxSize = (currEntrance->pos.y + currEntrance->height);
+
+				for (int i = currEntrance->pos.y; i < maxSize; i += NODE_MIN_DISTANCE)
+				{
+					BuildInterNode({ currEntrance->pos.x,i }, c1, { currEntrance->pos.x + 1, i }, c2, lvl);
+				}
+
+			}
+			break;
+			case ADJACENT_DIR::VERTICAL:
+			{
+				// Same as adove, different axis....
+			}
+			break;
+			}
+
+		}
+	}
+
+	void BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, int lvl)
+	{
+
+		n1 = NodeExists(p1, allTheGraph);
+
+		if (!n1)
+		{
+			n1 = new HierNode(p1);
+			staticNodes.push_back(n1);
+		}
+
+		if (NodeExists(p1, c1) == NULL)
+			c1->clustNodes.push_back(n1);
+
+
+		n2 = NodeExists(p2, allTheGraph);
+		...
+
+
+		CreateEdges(n1, n2, lvl, EDGE_TYPE::INTER);
+	}
+
+	void CreateIntraNodes(int lvl)
+	{
+		for (each cluster in currlvl)
+		{
+			for (each pair of nodes in cluster)
+			{
+			CreateEdges(n1, cn2, lvl, EDGE_TYPE::INTRA);
+			}
+		}
+	}
+  ```
+  
+   - This is how the Nodes are created:
+   	-INTER: The simply get every Entrance & for an Arbritary Number that we define (NODE_MIN_DISTANCE) we put a Pair of Nodes in each side of the Entrance &, to indicate that they will be INTER Nodes, we build an Edge between them (Edges Explanation Next)
+    	-INTRA: simply iterate through all the Nodes in a same Cluster & Connect them via A*.
+  ```cpp
+  	void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
+{
+	float distanceTo = 1.f;
+	if (type == EDGE_TYPE::INTRA || !EdgeExists(n1, n2, lvl, type))
+	{
+		//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
+		if (type == EDGE_TYPE::INTRA)
+		{
+
+			distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
+		}
+
+		n1->edges.push_back(new Edge(n2, distanceTo, lvl, type));
+	}
+
+	//Repeat the process for the second node----
+	if (type == EDGE_TYPE::INTRA || !EdgeExists(n2, n1, lvl, type))
+	{
+		if (type == EDGE_TYPE::INTRA)
+		{
+			if (distanceTo == 1)
+				distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
+		}
+
+		n2->edges.push_back(new Edge(n1, distanceTo, lvl, type));
+	}
+
+}
+   ```
+   - Just a thing to point here; note that we check if the EdgeExists (& if so we don't make another one) just for the INTER edges, we always create the INTRA edges. This has an explanation:
+   	- For Multiple-Level Search: we have to Level Up the existent Edges in order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
+	
+> Back at our map, now this makes sense: the RED represents the Nodes, the GREN the Inter Edges & the BLUE the Intra Edges (they are calculated just in one Cluster)
+	
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/nodesAndEdges.png"  width="60%" height="60%">
+</p>
+  
+#### Search & Refinement Process
+- With all the structures made Just lasts to do the Path:
+	- Hierarchical Search:
+    ```cpp
+    PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl)
+	{
+		n1 = absGraph.insertNode(origin, maxLvl, &toDeleteN1);
+		n2 = absGraph.insertNode(destination, maxLvl, &toDeleteN2);
+
+		if (!n1 || !n2)
+			return ret;
+
+		n1->h = n1->pos.OctileDistance(n2->pos);
+
+
+		//HPA* algorithm
+		HPAPathfinding(*n1, n2->pos, maxLvl);
+
+
+		//Delete the nodes from the graph
+		if (toDeleteN1)
+			absGraph.DeleteNode((HierNode*)n1, maxLvl);
+		if (toDeleteN2)
+			absGraph.DeleteNode((HierNode*)n2, maxLvl);
+	}
+   ```
   
 ### Possible Improvements & Changes
- [1] : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
-[2]: another option is to pre-calculate all of this and then load it when the map is calculated (this includes Entrances, Clusters, Nodes & Edges); but since our project is small, I decided to do it this way.
-[3]:  you could have a different approach in how you make the Clusters size (irregular is always an option) but you can have it be x2 larger than the previous one, etc.
-[4]:  This is inspired by the HNA* method; which basically makes the Clusters moldable to terrain, not the Entrances. If you wanna know more check out [THIS] (https://web.archive.org/web/20190725152735/http://aigamedev.com/open/tutorials/clearance-based-pathfinding/)
+- **[1]** : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
+- **[2]**: another option is to pre-calculate all of this and then load it when the map is calculated (this includes Entrances, Clusters, Nodes & Edges); but since our project is small, I decided to do it this way.
+- **[3]**:  you could have a different approach in how you make the Clusters size (irregular is always an option) but you can have it be x2 larger than the previous one, etc.
+- **[4]**:  This is inspired by the HNA* method; which basically makes the Clusters moldable to terrain, not the Entrances. If you wanna know more check out [THIS](https://web.archive.org/web/20190725152735/http://aigamedev.com/open/tutorials/clearance-based-pathfinding/)
