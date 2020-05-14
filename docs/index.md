@@ -383,10 +383,11 @@ struct HPAGraph
  
  
 <p align="center">
-<img src="https://github.com/AlexMelenchon/Hierarchial-Pathfinding-Research/blob/master/docs/images/Entrances_Draw.png"  width="60%" height="60%">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Entrances_Draw.png"  width="60%" height="60%">
 </p>
   
   > Great! The yellow rectangles represent the entrances between the Clusters, but something weird happened. Some Nodes are grey & have weird lines between them; let's figure out what this is!
+  
 ```cpp  
 	  void CreateInterNodes(int lvl)
 	{
@@ -459,6 +460,7 @@ struct HPAGraph
    - This is how the Nodes are created:
    	-INTER: The simply get every Entrance & for an Arbritary Number that we define (NODE_MIN_DISTANCE) we put a Pair of Nodes in each side of the Entrance &, to indicate that they will be INTER Nodes, we build an Edge between them (Edges Explanation Next)
     	-INTRA: simply iterate through all the Nodes in a same Cluster & Connect them via A*.
+	
 ```cpp
 		void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 	{
@@ -500,6 +502,7 @@ struct HPAGraph
 </p>
   
 #### Search & Refinement Process
+
 - With all the structures made Just lasts to do the Path:
 	- Hierarchical Search:
 	
