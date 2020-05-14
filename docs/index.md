@@ -177,66 +177,66 @@ struct HPAGraph
 
     
 ```cpp   
-  enum class ADJACENT_DIR
-{
-	DIR_NONE = -1,
+	  enum class ADJACENT_DIR
+	{
+		DIR_NONE = -1,
 
-	VERTICAL,
-	LATERAL
-};
+		VERTICAL,
+		LATERAL
+	};
 
-struct Entrance
-{
-	Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir);
-	Entrance();
+	struct Entrance
+	{
+		Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir);
+		Entrance();
 
-	iPoint pos;
-	int width, height;
+		iPoint pos;
+		int width, height;
 
-	ADJACENT_DIR dir;
+		ADJACENT_DIR dir;
 
-};
+	};
 
 ```
   - The entrances are also quite simple; the same way  Clusters do, they store position & size but, also, store the direction that they are connecting (This is LATERAL or VERTICAL).
 
  ```cpp   
-class PathNode
-{
-public:
-	PathNode();
-	PathNode(float g, float h, const iPoint& pos, PathNode* parent, int parentdir, int myDir, bool isdiagonal = false);
-	PathNode(const PathNode& node);
+	class PathNode
+	{
+	public:
+		PathNode();
+		PathNode(float g, float h, const iPoint& pos, PathNode* parent, int parentdir, int myDir, bool isdiagonal = false);
+		PathNode(const PathNode& node);
 
-	virtual uint FindWalkableAdjacents(std::vector<PathNode>& list_to_fill);
-	virtual float CalculateF(const iPoint& destination);
-	float Score() const;
+		virtual uint FindWalkableAdjacents(std::vector<PathNode>& list_to_fill);
+		virtual float CalculateF(const iPoint& destination);
+		float Score() const;
 
-	float g;
-	float h;
-	iPoint pos;
+		float g;
+		float h;
+		iPoint pos;
 
-	PathNode* parent;
+		PathNode* parent;
 
-	int parentDir;
-	int myDirection;
-	bool is_Diagonal;
+		int parentDir;
+		int myDirection;
+		bool is_Diagonal;
 
-};
+	};
 
-//HPA* Nodes
-class HierNode : public PathNode
-{
-public:
-	HierNode(iPoint pos);
-	HierNode(iPoint pos, bool tmp);
-	HierNode(float g, const iPoint& pos, PathNode* parent, int myDir, int parentdir, std::vector<Edge*> edges);
+	//HPA* Nodes
+	class HierNode : public PathNode
+	{
+	public:
+		HierNode(iPoint pos);
+		HierNode(iPoint pos, bool tmp);
+		HierNode(float g, const iPoint& pos, PathNode* parent, int myDir, int parentdir, std::vector<Edge*> edges);
 
-	float CalculateF(const iPoint& destination);
-	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl);
+		float CalculateF(const iPoint& destination);
+		uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl);
 
-	std::vector <Edge*> edges;
-};
+		std::vector <Edge*> edges;
+	};
 ```
   - The Nodes (called HierNodes here) need a little bit more of explanation:
     - First of all we have the PathNodes, which are regular A* nodes that indicate a tile in the non-abstract level (with your typical A* stuff)
@@ -245,28 +245,28 @@ public:
       - All the HierNodes store a vector of pointers of Edges (which are the connections between Nodes we discussed before).
       
   ```cpp   
-  struct Edge
-{
-	Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type);
-
-	void UpdateLvl(int lvl)
+	  struct Edge
 	{
-		this->lvl = lvl;
-	}
+		Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type);
 
-	HierNode* dest;
-	float moveCost;
+		void UpdateLvl(int lvl)
+		{
+			this->lvl = lvl;
+		}
 
-	int lvl;
-	EDGE_TYPE type;
+		HierNode* dest;
+		float moveCost;
 
-};
+		int lvl;
+		EDGE_TYPE type;
+
+	};
 ```
   -  All right, the last of the major agents. The Edges are also simple. They just store it's type (that remeber, can be INTER o INTRA), the destination Node (which is the Node this connection points to) & the amount that Cost going to that Node (in A* terms, the g).
   
 - The Code flow & Functions:
   -Basically the code flows like this:
-  ```cpp   
+ ```cpp   
   MapLoad()
   {
     HPAGraph absGraph;
@@ -304,7 +304,7 @@ public:
     CreateIntraNodes(lvl);
   }
   
-  ```
+```
   - Basically what we do here is to create the first level of the Graph: with it's Entrances, Clusters, Nodes & Conections. Then for subsuquent levels we just create the Clusters, the Nodes & their Connections. [1]
   - For better illustration, let's simluate a Graph Construction step by step. Let's say we start from this map:
   - Be noted that everything is calculated when we load a new map. [2
@@ -317,7 +317,7 @@ public:
    
 - Alright, let's now have a look at the Cluster Build Code & see how it affects our map:
 
-    ```cpp   
+```cpp   
   void BuildClusters(int lvl)
   {
     int clustSize = CLUSTER_SIZE_LVL * lvl;
@@ -352,7 +352,7 @@ public:
 
     lvlClusters.push_back(clusterVector);
   }
-  ``
+ ```
  - This function is a simple double for that iterates the map & creates the Clusters but I want to point out one thig:
   - The approach I used to make the Clusters regular is define an arbritary constant (CLUSTER_SIZE_LVL) & make each level so it's Clusters are this constant bigger than the previous ones. [2]
   
@@ -460,35 +460,36 @@ public:
    	-INTER: The simply get every Entrance & for an Arbritary Number that we define (NODE_MIN_DISTANCE) we put a Pair of Nodes in each side of the Entrance &, to indicate that they will be INTER Nodes, we build an Edge between them (Edges Explanation Next)
     	-INTRA: simply iterate through all the Nodes in a same Cluster & Connect them via A*.
 ```cpp
-  	void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
-{
-	float distanceTo = 1.f;
-	if (type == EDGE_TYPE::INTRA || !EdgeExists(n1, n2, lvl, type))
+		void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 	{
-		//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
-		if (type == EDGE_TYPE::INTRA)
+		float distanceTo = 1.f;
+		if (type == EDGE_TYPE::INTRA || !EdgeExists(n1, n2, lvl, type))
 		{
+			//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
+			if (type == EDGE_TYPE::INTRA)
+			{
 
-			distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
-		}
-
-		n1->edges.push_back(new Edge(n2, distanceTo, lvl, type));
-	}
-
-	//Repeat the process for the second node----
-	if (type == EDGE_TYPE::INTRA || !EdgeExists(n2, n1, lvl, type))
-	{
-		if (type == EDGE_TYPE::INTRA)
-		{
-			if (distanceTo == 1)
 				distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
+			}
+
+			n1->edges.push_back(new Edge(n2, distanceTo, lvl, type));
 		}
 
-		n2->edges.push_back(new Edge(n1, distanceTo, lvl, type));
-	}
+		//Repeat the process for the second node----
+		if (type == EDGE_TYPE::INTRA || !EdgeExists(n2, n1, lvl, type))
+		{
+			if (type == EDGE_TYPE::INTRA)
+			{
+				if (distanceTo == 1)
+					distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
+			}
 
-}
+			n2->edges.push_back(new Edge(n1, distanceTo, lvl, type));
+		}
+
+	}
 ```
+
    - Just a thing to point here; note that we check if the EdgeExists (& if so we don't make another one) just for the INTER edges, we always create the INTRA edges. This has an explanation:
    	- For Multiple-Level Search: we have to Level Up the existent Edges in order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
 	
@@ -501,6 +502,7 @@ public:
 #### Search & Refinement Process
 - With all the structures made Just lasts to do the Path:
 	- Hierarchical Search:
+	
 ```cpp
     PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl)
 	{
