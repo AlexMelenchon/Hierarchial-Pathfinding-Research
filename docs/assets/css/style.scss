@@ -13,3 +13,12 @@ section {
 #header nav {
     max-width: 1300px;
 }
+
+body nav{
+    z-index: 99;
+    padding-top: 20px;
+    position: fixed;
+    top: 50%;
+    background-color: blue;
+    width: 287px;
+}
