@@ -262,6 +262,7 @@ struct HPAGraph
 
 	};
 ```
+
   -  All right, the last of the major agents. The Edges are also simple. They just store it's type (that remeber, can be INTER o INTRA), the destination Node (which is the Node this connection points to) & the amount that Cost going to that Node (in A* terms, the g).
   
 - The Code flow & Functions:
@@ -305,15 +306,19 @@ struct HPAGraph
   }
   
 ```
+
   - Basically what we do here is to create the first level of the Graph: with it's Entrances, Clusters, Nodes & Conections. Then for subsuquent levels we just create the Clusters, the Nodes & their Connections. [1]
+  - Be noted that everything is calculated when we load a new map. [2]
+  
   - For better illustration, let's simluate a Graph Construction step by step. Let's say we start from this map:
-  - Be noted that everything is calculated when we load a new map. [2
+  
+
   
 <p align="center">
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Map.png"  width="60%" height="60%">
 </p>
 
-   > Being the white tiles walkable & the black ones non-alkable
+   > Being the white tiles walkable & the black ones non-alkable.
    
 - Alright, let's now have a look at the Cluster Build Code & see how it affects our map:
 
@@ -349,10 +354,11 @@ struct HPAGraph
       }
     }
 
-
     lvlClusters.push_back(clusterVector);
   }
+  
  ```
+ 
  - This function is a simple double for that iterates the map & creates the Clusters but I want to point out one thig:
   - The approach I used to make the Clusters regular is define an arbritary constant (CLUSTER_SIZE_LVL) & make each level so it's Clusters are this constant bigger than the previous ones. [2]
   
@@ -462,7 +468,7 @@ struct HPAGraph
     	-INTRA: simply iterate through all the Nodes in a same Cluster & Connect them via A*.
 	
 ```cpp
-		void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
+	void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 	{
 		float distanceTo = 1.f;
 		if (type == EDGE_TYPE::INTRA || !EdgeExists(n1, n2, lvl, type))
@@ -490,10 +496,13 @@ struct HPAGraph
 		}
 
 	}
+	
 ```
 
    - Just a thing to point here; note that we check if the EdgeExists (& if so we don't make another one) just for the INTER edges, we always create the INTRA edges. This has an explanation:
-   	- For Multiple-Level Search: we have to Level Up the existent Edges in order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
+   
+   	- For Multiple-Level Search: we have to Level Up the existent Edges. I
+	n order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
 	
 > Back at our map, now this makes sense: the RED represents the Nodes, the GREN the Inter Edges & the BLUE the Intra Edges (they are calculated just in one Cluster)
 	
