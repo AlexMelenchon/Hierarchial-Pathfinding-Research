@@ -30,7 +30,7 @@ First of all, there aren't static religious ways to implement the Hierarchial Pa
 
 With this said, let's see the principles that the "hierchy graph must follow" in order to have an expandable & solid grid configuration (you can find the [Near Optimal Hierarchical Path-Finding paper](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf) this explanation is based on [HERE](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf)):
 
-- **Agents**:
+#### **Agents**:
 
   - **Clusters**: these are basically groups of the lower-level tiles; the higher the level of abstraction of the graph, the bigger they are.
     
@@ -50,12 +50,11 @@ With this said, let's see the principles that the "hierchy graph must follow" in
 
 > Here you can see how the agents come into play to make the graph. In the image on the left, you can see the blue divisions represent the clusters & the red lines the created nodes in the entrances. Then, in the right, the Edges between the nodes are visible, with it's movement cost beign shown.
 
+####  **General Methods**:
 
- - **General Methods**:
- 
-    - **Preparing the Graph**: this process has to be executed before the runtime of the game; it can be pre-calculated & stored in the game files or can also be calculated while the game map is loading. Basically this cretes the first abstraction level, which means, creating the Entrances, Cluster, Nodes & Edges for the level.
+   - **Preparing the Graph**: this process has to be executed before the runtime of the game; it can be pre-calculated & stored in the game files or can also be calculated while the game map is loading. Basically this cretes the first abstraction level, which means, creating the Entrances, Cluster, Nodes & Edges for the level.
     
-    - **Adding further Graph Levels**: with our first level created, we can add only higher abstraction levels on top of that but, for these  further abstraction levels, we will  reutilize the Entrances calculated for the first level, because the higher level clusters would be groups of lower level clusters. Then, since the entrances are the same, the nodes will be as well so we can add a variable level to our nodes to indicate the code that this node is from a higher level. We can also do it for the INTER edges as well, but, for the INTRA edges, we will have to calculate them again, since we need the differnt INTRA connections for each level, since they do change.
+   - **Adding further Graph Levels**: with our first level created, we can add only higher abstraction levels on top of that but, for these  further abstraction levels, we will  reutilize the Entrances calculated for the first level, because the higher level clusters would be groups of lower level clusters. Then, since the entrances are the same, the nodes will be as well so we can add a variable level to our nodes to indicate the code that this node is from a higher level. We can also do it for the INTER edges as well, but, for the INTRA edges, we will have to calculate them again, since we need the differnt INTRA connections for each level, since they do change.
    
    - **Hierchial Serch**: asumed an abstraction level, and origin & a destination are defined, we will perform a search with our desired algorithm; being the nodes to search NOT the lowest-level tiles but the extraction levels but the defined level abstracted ones. First of all we will introduce the origin & destination as temporal nodes in the abstract level, in order to perform & finish the search. When the path is done (using the abstract Nodes of the level as points to do the path & the Edges as the connections between them) we will remove these temporal nodes from the abstract graph. 
    As you can already see, this makes a distinction between Hierchial & other methods of pathfinding, since **we don't have just to worry how much time the algorithm wastes, but also how much it costs to introduce & delete the nodes from the graph.**
@@ -66,22 +65,22 @@ With this said, let's see the principles that the "hierchy graph must follow" in
 
 ***
 
- ### Different Approaches
+### Different Approaches
 
- - **Different Algorithms**:
-    - I have not mentioned this because I didn't want to bias anyone, but the Hierchial method is often used as an upgrade of the A* pathfinding algorithm (if you need a quick A* reminder, there is a very nice & concise article in  [Red Blob Games](https://www.redblobgames.com/pathfinding/a-star/introduction.html) but, as I said it can be used for any other algorithm; for example [this paper](https://www.cs.ru.nl/bachelors-theses/2013/Linus_van_Elswijk___0710261___Hierarchical_Path-Finding_Theta_star_Combining_HPA_star_and_Theta_star.pdf) implements it in a variation of A*, called Theta*.
+#### **Different Algorithms**:
+   - I have not mentioned this because I didn't want to bias anyone, but the Hierchial method is often used as an upgrade of the A* pathfinding algorithm (if you need a quick A* reminder, there is a very nice & concise article in  [Red Blob Games](https://www.redblobgames.com/pathfinding/a-star/introduction.html) but, as I said it can be used for any other algorithm; for example [this paper](https://www.cs.ru.nl/bachelors-theses/2013/Linus_van_Elswijk___0710261___Hierarchical_Path-Finding_Theta_star_Combining_HPA_star_and_Theta_star.pdf) implements it in a variation of A*, called Theta*.
     
     
-    > Theta* is basically A* with a Jump Point Search implemented; if you wanna know more about JPS*, there is a very nice research from my colleague, [Lucho Suaya](https://www.linkedin.com/in/luchosuaya/) [HERE](https://lucho1.github.io/JumpPointSearch/); which I took as reference & inspiration to make the document you are reading right now.
+   > Theta* is basically A* with a Jump Point Search implemented; if you wanna know more about JPS*, there is a very nice research from my colleague, [Lucho Suaya](https://www.linkedin.com/in/luchosuaya/) [HERE](https://lucho1.github.io/JumpPointSearch/); which I took as reference & inspiration to make the document you are reading right now.
     
-  - **Dynamic Approach**:  
+#### **Dynamic Approach**:  
     - You can also get the Hierchy to work with dynamic objects & make it recalculate paths whenever a path gets interrupted, being in the need of handling multiple agents that request a path in a very large world full of interesting obstacles (such as stairs, mazes, etc.). There is a very cool GDC presentation about  this implementation by Alain Benoit, Lead Programmer and CTO (Chief Technology Officer) of [Sauropod Studio](https://www.sauropodstudio.com/english-1) in their game [Castle Story](http://www.castlestory.net/). You can find the 2018 GDC presentation [HERE](https://twvideo01.ubm-us.net/o1/vault/gdc2018/presentations/Alain_Benoit_HierarchicalDynamicPathfinding.pdf).
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Voxel_hier2.png"  width="60%" height="60%">
 </p>
    
-  - **Irregular Graphs** (or navigation meshes): 
+#### **Irregular Graphs** (or navigation meshes): 
     - Of course I must mention this, note that the agents that I have explained in the previous sections is partially a lie. This research is focused for general HP implementation and so, the explanation will be about making a regulat-all purpose graph; but a very common approach in Videogames & Game Engines is to create a custom navigation mesh for our levels; but the approach is the same: instead of having Entrances, we will define the nodes as we consider & we calculate the edges beween the nodes. Then we can abstractly connect the nodes & make the algorithm run raw to refine the lower level path or we can also refine clusters to improve the refinement.
    This provides much more path stability, we make sure of how dense we want the map to be in certain areas, etc. The main problem is that is not computer-generated but human generated and that takes a lot of time & effort.
    
@@ -102,11 +101,11 @@ With this said, let's see the principles that the "hierchy graph must follow" in
  
  >**Important Note**:Navigation Meshes is  a very cool & interesting topic to explore, but in this reseach I want to focus more in the basics of the Hierchial Pathfinding, since, I am a big believer that, if you understand the basics (ergo, what I am about to explain) who will know how the Navigatio Maps & Meshes work way faster &, also, since you will know what is happening in the lowest level, you will also understand the optimizations or came up with your own!
 
-### My Approach - HPA*
+## My Approach - HPA*
 Tho approach I selected is to do a **Regular Multi-Level Hierarchy A***. The reason is simple and I have already mentioned before: I want this to be an explanation so you will understand how & why a Hiearchial Pathfinding works, so let's start from the basic, shall we?
 
 #### Code Structures
- - The Abstract Graph structure:
+#### The Abstract Graph structure:
  
  ```cpp
 struct HPAGraph
@@ -539,7 +538,7 @@ struct HPAGraph
 	}
 ```
   
-### Possible Improvements & Changes
+## Possible Improvements & Changes
 - **[1]** : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
 - **[2]**: another option is to pre-calculate all of this and then load it when the map is calculated (this includes Entrances, Clusters, Nodes & Edges); but since our project is small, I decided to do it this way.
 - **[3]**:  you could have a different approach in how you make the Clusters size (irregular is always an option) but you can have it be x2 larger than the previous one, etc.
