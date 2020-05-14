@@ -1,5 +1,3 @@
-# Hierarchial Pathfinding-Research
-
 I am [Àlex Melenchón](https://www.linkedin.com/in/alex-melench%C3%B3n-maza-a46981195/), student of the [Bachelor’s Degree in
 Video Games by UPC at CITM](https://www.citm.upc.edu/ing/estudis/graus-videojocs/). This content is generated for the second year’s
 subject Project 2, under supervision of lecturer [Marc Garrigó](https://www.linkedin.com/in/mgarrigo/).
