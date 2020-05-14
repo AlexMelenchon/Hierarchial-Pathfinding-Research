@@ -14,6 +14,10 @@ section {
     max-width: 1175px;
 }
 
+section #title .credits{
+    font-size:14px;
+}
+
 #index {
     z-index: 99;
     padding: 20px;
@@ -38,10 +42,14 @@ a.buttons {
     text-shadow: rgba(0, 0, 0, 0.4) 0 -1px 0;
     padding: 2px 2px 2px 22px;
     height: 30px;
+
+    border: 1px solid white;
+    border-radius: 3px;
+    padding: 4px 8px 8px 22px;
 }
 
 a.github {
-    background: url(../images/octocat-small.png) no-repeat 1px;
+    background: url(../images/octocat-small.png) no-repeat 1px #252525;
 }
 
 a.buttons:hover {
