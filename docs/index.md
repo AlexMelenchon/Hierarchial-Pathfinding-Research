@@ -523,8 +523,7 @@ void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 
    - Just a thing to point here; note that we check if the EdgeExists (& if so we don't make another one) just for the INTER edges, we always create the INTRA edges. This has an explanation:
    
-   	- For Multiple-Level Search: we have to Level Up the existent Edges. I
-	n order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
+   - For Multiple-Level Search: we have to Level Up the existent Edges. In order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
 	
 > Back at our map, now this makes sense: the RED represents the Nodes, the GREN the Inter Edges & the BLUE the Intra Edges (they are calculated just in one Cluster)
 	
