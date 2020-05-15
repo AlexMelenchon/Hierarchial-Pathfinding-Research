@@ -174,66 +174,66 @@ struct HPAGraph
 
     
 ```cpp   
-	  enum class ADJACENT_DIR
-	{
-		DIR_NONE = -1,
+  enum class ADJACENT_DIR
+{
+	DIR_NONE = -1,
 
-		VERTICAL,
-		LATERAL
-	};
+	VERTICAL,
+	LATERAL
+};
 
-	struct Entrance
-	{
-		Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir);
-		Entrance();
+struct Entrance
+{
+	Entrance(iPoint pos, int width, int height, ADJACENT_DIR dir);
+	Entrance();
 
-		iPoint pos;
-		int width, height;
+	iPoint pos;
+	int width, height;
 
-		ADJACENT_DIR dir;
+	ADJACENT_DIR dir;
 
-	};
+};
 
 ```
   - The entrances are also quite simple; the same way  Clusters do, they store position & size but, also, store the direction that they are connecting (This is LATERAL or VERTICAL).
 
  ```cpp   
-	class PathNode
-	{
-	public:
-		PathNode();
-		PathNode(float g, float h, const iPoint& pos, PathNode* parent, int parentdir, int myDir, bool isdiagonal = false);
-		PathNode(const PathNode& node);
+class PathNode
+{
+public:
+	PathNode();
+	PathNode(float g, float h, const iPoint& pos, PathNode* parent, int parentdir, int myDir, bool isdiagonal = false);
+	PathNode(const PathNode& node);
 
-		virtual uint FindWalkableAdjacents(std::vector<PathNode>& list_to_fill);
-		virtual float CalculateF(const iPoint& destination);
-		float Score() const;
+	virtual uint FindWalkableAdjacents(std::vector<PathNode>& list_to_fill);
+	virtual float CalculateF(const iPoint& destination);
+	float Score() const;
 
-		float g;
-		float h;
-		iPoint pos;
+	float g;
+	float h;
+	iPoint pos;
 
-		PathNode* parent;
+	PathNode* parent;
 
-		int parentDir;
-		int myDirection;
-		bool is_Diagonal;
+	int parentDir;
+	int myDirection;
+	bool is_Diagonal;
 
-	};
+};
 
-	//HPA* Nodes
-	class HierNode : public PathNode
-	{
-	public:
-		HierNode(iPoint pos);
-		HierNode(iPoint pos, bool tmp);
-		HierNode(float g, const iPoint& pos, PathNode* parent, int myDir, int parentdir, std::vector<Edge*> edges);
+//HPA* Nodes
+class HierNode : public PathNode
+{
+public:
+	HierNode(iPoint pos);
+	HierNode(iPoint pos, bool tmp);
+	HierNode(float g, const iPoint& pos, PathNode* parent, int myDir, int parentdir, std::vector<Edge*> edges);
 
-		float CalculateF(const iPoint& destination);
-		uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl);
+	float CalculateF(const iPoint& destination);
+	uint FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl);
 
-		std::vector <Edge*> edges;
-	};
+	std::vector <Edge*> edges;
+};
 ```
   - The Nodes (called HierNodes here) need a little bit more of explanation:
     - First of all we have the PathNodes, which are regular A* nodes that indicate a tile in the non-abstract level (with your typical A* stuff)
@@ -242,22 +242,22 @@ struct HPAGraph
       - All the HierNodes store a vector of pointers of Edges (which are the connections between Nodes we discussed before).
       
   ```cpp   
-	  struct Edge
+  struct Edge
+{
+	Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type);
+
+	void UpdateLvl(int lvl)
 	{
-		Edge(HierNode* dest, float distanceTo, int lvl, EDGE_TYPE type);
+		this->lvl = lvl;
+	}
 
-		void UpdateLvl(int lvl)
-		{
-			this->lvl = lvl;
-		}
+	HierNode* dest;
+	float moveCost;
 
-		HierNode* dest;
-		float moveCost;
+	int lvl;
+	EDGE_TYPE type;
 
-		int lvl;
-		EDGE_TYPE type;
-
-	};
+};
 ```
 
   -  All right, the last of the major agents. The Edges are also simple. They just store it's type (that remeber, can be INTER o INTRA), the destination Node (which is the Node this connection points to) & the amount that Cost going to that Node (in A* terms, the g).
@@ -267,42 +267,42 @@ struct HPAGraph
   -Basically the code flows like this:
   
  ```cpp   
-	  MapLoad()
-	  {
-	    HPAGraph absGraph;
+  MapLoad()
+  {
+    HPAGraph absGraph;
 
-		HPAPreProcessing(MAX_LEVELS);
-	  }
+	HPAPreProcessing(MAX_LEVELS);
+  }
 
 
-	  void HPAPreProcessing(int maxLevel)
-	  {
-	    absGraph.PrepareGraph();
+  void HPAPreProcessing(int maxLevel)
+  {
+    absGraph.PrepareGraph();
 
-	    for (int l = 2; l <= maxLevel; l++)
-	    {
-	      absGraph.CreateGraphLvl(l);
-	    }
+    for (int l = 2; l <= maxLevel; l++)
+    {
+      absGraph.CreateGraphLvl(l);
+    }
 
-	  }
+  }
 
-	  void PrepareGraph()
-	  {
+  void PrepareGraph()
+  {
 
-	    BuildClusters(1);
-	    BuildEntrances();
+    BuildClusters(1);
+    BuildEntrances();
 
-	    CreateInterNodes(1);
-	    CreateIntraNodes(1);
-	  }
+    CreateInterNodes(1);
+    CreateIntraNodes(1);
+  }
 
-	  void CreateGraphLvl(int lvl)
-	  {
-	    BuildClusters(lvl);
+  void CreateGraphLvl(int lvl)
+  {
+    BuildClusters(lvl);
 
-	    CreateInterNodes(lvl);
-	    CreateIntraNodes(lvl);
-	  }
+    CreateInterNodes(lvl);
+    CreateIntraNodes(lvl);
+  }
   
 ```
 
@@ -394,72 +394,72 @@ struct HPAGraph
   > Great! The yellow rectangles represent the entrances between the Clusters, but something weird happened. Some Nodes are grey & have weird lines between them; let's figure out what this is!
   
 ```cpp  
-	  void CreateInterNodes(int lvl)
+  void CreateInterNodes(int lvl)
+{
+	for (each entrance)
 	{
-		for (each entrance)
+		switch (currEntrance->dir)
 		{
-			switch (currEntrance->dir)
+		case ADJACENT_DIR::LATERAL:
+		{
+			c1 = DetermineCluster(currEntrance->pos, lvl);
+			c2 = DetermineCluster({ currEntrance->pos.x + 1, currEntrance->pos.y }, lvl);
+
+			if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
+				continue;
+
+
+			int maxSize = (currEntrance->pos.y + currEntrance->height);
+
+			for (int i = currEntrance->pos.y; i < maxSize; i += NODE_MIN_DISTANCE)
 			{
-			case ADJACENT_DIR::LATERAL:
-			{
-				c1 = DetermineCluster(currEntrance->pos, lvl);
-				c2 = DetermineCluster({ currEntrance->pos.x + 1, currEntrance->pos.y }, lvl);
-
-				if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
-					continue;
-
-
-				int maxSize = (currEntrance->pos.y + currEntrance->height);
-
-				for (int i = currEntrance->pos.y; i < maxSize; i += NODE_MIN_DISTANCE)
-				{
-					BuildInterNode({ currEntrance->pos.x,i }, c1, { currEntrance->pos.x + 1, i }, c2, lvl);
-				}
-
-			}
-			break;
-			case ADJACENT_DIR::VERTICAL:
-			{
-				// Same as adove, different axis....
-			}
-			break;
+				BuildInterNode({ currEntrance->pos.x,i }, c1, { currEntrance->pos.x + 1, i }, c2, lvl);
 			}
 
 		}
-	}
-
-	void BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, int lvl)
-	{
-
-		n1 = NodeExists(p1, allTheGraph);
-
-		if (!n1)
+		break;
+		case ADJACENT_DIR::VERTICAL:
 		{
-			n1 = new HierNode(p1);
-			staticNodes.push_back(n1);
+			// Same as adove, different axis....
+		}
+		break;
 		}
 
-		if (NodeExists(p1, c1) == NULL)
-			c1->clustNodes.push_back(n1);
+	}
+}
 
+void BuildInterNode(iPoint p1, Cluster* c1, iPoint p2, Cluster* c2, int lvl)
+{
 
-		n2 = NodeExists(p2, allTheGraph);
-		...
+	n1 = NodeExists(p1, allTheGraph);
 
-
-		CreateEdges(n1, n2, lvl, EDGE_TYPE::INTER);
+	if (!n1)
+	{
+		n1 = new HierNode(p1);
+		staticNodes.push_back(n1);
 	}
 
-	void CreateIntraNodes(int lvl)
+	if (NodeExists(p1, c1) == NULL)
+		c1->clustNodes.push_back(n1);
+
+
+	n2 = NodeExists(p2, allTheGraph);
+	...
+
+
+	CreateEdges(n1, n2, lvl, EDGE_TYPE::INTER);
+}
+
+void CreateIntraNodes(int lvl)
+{
+	for (each cluster in currlvl)
 	{
-		for (each cluster in currlvl)
+		for (each pair of nodes in cluster)
 		{
-			for (each pair of nodes in cluster)
-			{
-			CreateEdges(n1, cn2, lvl, EDGE_TYPE::INTRA);
-			}
+		CreateEdges(n1, cn2, lvl, EDGE_TYPE::INTRA);
 		}
 	}
+}
  ```
   
    - This is how the Nodes are created:
@@ -467,34 +467,34 @@ struct HPAGraph
     	-INTRA: simply iterate through all the Nodes in a same Cluster & Connect them via A*.
 	
 ```cpp
-	void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
+void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
+{
+	float distanceTo = 1.f;
+	if (type == EDGE_TYPE::INTRA || !EdgeExists(n1, n2, lvl, type))
 	{
-		float distanceTo = 1.f;
-		if (type == EDGE_TYPE::INTRA || !EdgeExists(n1, n2, lvl, type))
+		//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
+		if (type == EDGE_TYPE::INTRA)
 		{
-			//If the connection if between same cluster nodes, we calculate the moving cost trough A*; otherwise  is 1
-			if (type == EDGE_TYPE::INTRA)
-			{
 
-				distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
-			}
-
-			n1->edges.push_back(new Edge(n2, distanceTo, lvl, type));
+			distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
 		}
 
-		//Repeat the process for the second node----
-		if (type == EDGE_TYPE::INTRA || !EdgeExists(n2, n1, lvl, type))
-		{
-			if (type == EDGE_TYPE::INTRA)
-			{
-				if (distanceTo == 1)
-					distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
-			}
-
-			n2->edges.push_back(new Edge(n1, distanceTo, lvl, type));
-		}
-
+		n1->edges.push_back(new Edge(n2, distanceTo, lvl, type));
 	}
+
+	//Repeat the process for the second node----
+	if (type == EDGE_TYPE::INTRA || !EdgeExists(n2, n1, lvl, type))
+	{
+		if (type == EDGE_TYPE::INTRA)
+		{
+			if (distanceTo == 1)
+				distanceTo = SimpleAPathfinding(n1->pos, n2->pos).GetCost();
+		}
+
+		n2->edges.push_back(new Edge(n1, distanceTo, lvl, type));
+	}
+
+}
 	
 ```
 
@@ -515,27 +515,27 @@ struct HPAGraph
 	- Hierarchical Search:
 	
 ```cpp
-    PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl)
-	{
-		n1 = absGraph.insertNode(origin, maxLvl, &toDeleteN1);
-		n2 = absGraph.insertNode(destination, maxLvl, &toDeleteN2);
+PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl)
+{
+	n1 = absGraph.insertNode(origin, maxLvl, &toDeleteN1);
+	n2 = absGraph.insertNode(destination, maxLvl, &toDeleteN2);
 
-		if (!n1 || !n2)
-			return ret;
+	if (!n1 || !n2)
+		return ret;
 
-		n1->h = n1->pos.OctileDistance(n2->pos);
-
-
-		//HPA* algorithm
-		HPAPathfinding(*n1, n2->pos, maxLvl);
+	n1->h = n1->pos.OctileDistance(n2->pos);
 
 
-		//Delete the nodes from the graph
-		if (toDeleteN1)
-			absGraph.DeleteNode((HierNode*)n1, maxLvl);
-		if (toDeleteN2)
-			absGraph.DeleteNode((HierNode*)n2, maxLvl);
-	}
+	//HPA* algorithm
+	HPAPathfinding(*n1, n2->pos, maxLvl);
+
+
+	//Delete the nodes from the graph
+	if (toDeleteN1)
+		absGraph.DeleteNode((HierNode*)n1, maxLvl);
+	if (toDeleteN2)
+		absGraph.DeleteNode((HierNode*)n2, maxLvl);
+}
 ```
   
 ## Possible Improvements & Changes
