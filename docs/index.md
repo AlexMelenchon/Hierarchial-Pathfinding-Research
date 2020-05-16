@@ -125,9 +125,9 @@ With this said, let's see the principles that the "hierarchy graph must follow" 
  >**Important Note**: Navigation Meshes is  a very cool & interesting topic to explore, but in this research I want to focus more in the basics of the Hierarchial Pathfinding, since, I am a big believer that, if you understand the basics (ergo, what I am about to explain) who will know how the Navigation Maps & Meshes work way faster &, also, since you will know what is happening in the lowest level, you will also understand the optimizations or came up with your own!
 
 ## My Approach - HPA*
-Tho approach I selected is to do a **Regular Multi-Level Hierarchy A***. The reason is simple and I have already mentioned before: I want this to be an explanation so you will understand how & why a Hiearchial Pathfinding works, so let's start from the basic, shall we?
+The approach I selected is to do a **Regular Multi-Level Hierarchy A***. The reason is simple and I have already mentioned before: I want this to be an explanation so you will understand how & why a Hiearchial Pathfinding works, so let's start from the basic, shall we?
 
-#### Code Structures
+### Code Structures
 #### The Abstract Graph structure:
  
  ```cpp
@@ -173,7 +173,7 @@ struct HPAGraph
 
 ```
   - Explanation:
-    - As you can see, we will store in memory the **Clusters** for each level, the **Entrances** (we will have enttrances, since it is a regular graph) & the **Nodes of the Hiearchy** (The Nodes are stored here, but note that each cluster has a vector of pointers to it's nodes, in order to have a better time searching)
+    - As you can see, we will store in memory the **Clusters** for each level, the **Entrances** (we will have enttrances, since it is a regular graph) & the **Nodes of the Hiearchy** (The Nodes are stored here, but note that each cluster has a vector of pointers to its nodes, in order to have a better time searching)
     
     - Let's take a further look into the Containers Structures:
     
@@ -192,8 +192,8 @@ struct HPAGraph
 
 ```
   - The Cluster is simple, it's just stores it's position & size. But take note, each Cluster has a vector of the Nodes that are inside him; this is done in order to prevent two things:
-    - This makes the code faster, since we don't have to check every node in the Graph, just to ones inside the same Cluster.
-    - In order to have multi-level search, the Nodes must store it's level. This makes the pathfinding go slower, since we have to instance one more variable. My work arround for this is to have the clusters already separated in levels by their position in the vector of Cluster vecotrs (Ex. lvlClusters[N] stores all the Clusters in the N+1 level, beign 0 the non-abstract level). This way we don't have all the Clusters & Nodes in the same place, but have a little of structure.
+    - This makes the code faster, since we don't have to check every node in the Graph, just to ones inside the same Cluster. (Note that, ethier way, we store the Nodes in a vector called StaticNodes, here we will store all the Nodes that are from the beginning & that cannot be changed (Ex. Static walls) because, if we where to insert a Node that can be modified (let's say a wall that you can tear down or that you can build) we would added ONLY to its Cluster Node Vector. This is done to have a faster check in the Node deletion process).
+    - In order to have a multi-level search, the Nodes must store it's level. This makes the pathfinding go slower, since we have to instance one more variable. My work around for this is to have the clusters already separated in levels by their position in the vector of Cluster vectors (Ex. lvlClusters[N] stores all the Clusters in the N+1 level, being 0 the non-abstract level). This way we don't have all the Clusters & Nodes in the same place, but have a little structure.
 
     
 ```cpp   
@@ -218,7 +218,7 @@ struct Entrance
 };
 
 ```
-  - The entrances are also quite simple; the same way  Clusters do, they store position & size but, also, store the direction that they are connecting (This is LATERAL or VERTICAL).
+  - The entrances are also quite simple; the same way  Clusters do, they store position and size, but, also, store the direction that they are connected (This could be LATERAL or VERTICAL).
 
  ```cpp   
 class PathNode
@@ -258,9 +258,9 @@ public:
 	std::vector <Edge*> edges;
 };
 ```
-  - The Nodes (called HierNodes here) need a little bit more of explanation:
+  - The Nodes (called HierNodes here) need a little bit more of an  explanation:
     - First of all we have the PathNodes, which are regular A* nodes that indicate a tile in the non-abstract level (with your typical A* stuff)
-    - Then we have the Hiernodes, which are a class that inherits from PathNode; since, at the end, both are the same. There are two key diferences though:
+    - Then we have the Hiernodes, which are a class that inherits from PathNode; since, at the end, both are the same. There are two key diferences, though:
       - Some functions are overrided from the PathNode, since they are different (we will get to that later)
       - All the HierNodes store a vector of pointers of Edges (which are the connections between Nodes we discussed before).
       
@@ -283,7 +283,7 @@ public:
 };
 ```
 
-  -  All right, the last of the major agents. The Edges are also simple. They just store it's type (that remeber, can be INTER o INTRA), the destination Node (which is the Node this connection points to) & the amount that Cost going to that Node (in A* terms, the g).
+  -  All right, the last of the major agents. The Edges are also simple. They just store its type (that remember, can be INTER o INTRA), the destination Node (which is the Node this connection points to) & the amount that Cost going to that Node (in A* terms, the g).
   
 - The Code flow & Functions:
 
@@ -329,10 +329,10 @@ public:
   
 ```
 
-  - Basically what we do here is to create the first level of the Graph: with it's Entrances, Clusters, Nodes & Conections. Then for subsuquent levels we just create the Clusters, the Nodes & their Connections. [1]
+  - Basically what we do here is to create the first level of the Graph: with it's Entrances, Clusters, Nodes & Edges. Then for subsequent levels we just create the Clusters, the Nodes & their Connections. [1]
   - Be noted that everything is calculated when we load a new map. [2]
   
-  - For better illustration, let's simluate a Graph Construction step by step. Let's say we start from this map:
+  - For better illustration, let's simulate a Graph Construction step by step. Let's say we start from this map:
   
 
   
@@ -340,7 +340,7 @@ public:
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Map.png"  width="60%" height="60%">
 </p>
 
-   > Being the white tiles walkable & the black ones non-alkable.
+   > Being the white tiles walkable & the black ones non-walkable.
    
 - Alright, let's now have a look at the Cluster Build Code & see how it affects our map:
 
@@ -381,16 +381,16 @@ public:
   
  ```
  
- - This function is a simple double for that iterates the map & creates the Clusters but I want to point out one thig:
-  - The approach I used to make the Clusters regular is define an arbritary constant (CLUSTER_SIZE_LVL) & make each level so it's Clusters are this constant bigger than the previous ones. [2]
+ - This function is a simple double for that iterates the map & creates the Clusters but I want to point out one thing:
+  - The approach I used to make the Clusters regular is define an arbitrary constant (CLUSTER_SIZE_LVL) & make each level so it's Clusters are this constant bigger than the previous ones. [2]
   
-- Let's take a look on the Map & see how it has changed:
+- Let's take a look at the Map & see how it has changed:
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/Clusters.png"  width="60%" height="60%">
 </p>
 
-> As you can see, now the Map has division of Clusters that group tiles from the non-abstract level. Note that if we added another Graph Level, it would create another Clusters double the size.
+> As you can see, now the Map has divisions of Clusters that group tiles of the non-abstract level. Note that if we added another Graph Level, it would create another Clusters double the size.
 
 - Let's take a closer look into the Structure Building pseudocode:
 
@@ -405,7 +405,7 @@ public:
   }
 
 ```
- - We just iterate the clusters and find the adjacent ones; between them we will create the entrances. Check the CreateEntrances() method for more info but basically what it does is create an Entrance for each group of consecutive walkable tiles. [4]
+ - We just iterate the clusters and find the adjacent ones; between them we will create the entrances. Check the CreateEntrances() method for more info, but, basically what it does is create an Entrance for each group of consecutive walkable tiles. [4]
  
  - Let's zoom-in at the top-left corner of the map and see how it has changed:
  
@@ -523,7 +523,7 @@ void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 
    - Just a thing to point here; note that we check if the EdgeExists (& if so we don't make another one) just for the INTER edges, we always create the INTRA edges. This has an explanation:
    
-   - For Multiple-Level Search: we have to Level Up the existent Edges. In order to indicate that they are from a different abstraction level (Edge struct has a variable lvl & EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
+   - For Multiple-Level Search: we have to Level Up the existent Edges. In order to indicate that they are from a different abstraction level (Edge struct has a variable lvl and EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
 	
 > Back at our map, now this makes sense: the RED represents the Nodes, the GREN the Inter Edges & the BLUE the Intra Edges (they are calculated just in one Cluster)
 	
@@ -531,7 +531,7 @@ void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/nodesAndEdges.png"  width="60%" height="60%">
 </p>
   
-#### Search & Refinement Process
+#### Search Process
 
 - With all the structures made Just lasts to do the Path:
 	- Hierarchical Search:
@@ -559,7 +559,303 @@ PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl
 		absGraph.DeleteNode((HierNode*)n2, maxLvl);
 }
 ```
+
+   - All right, this is how the function that prepares the Graph to do the pathfind from the Origin to the Destination. Let's go function by function and see how it operates. First of all, we have to insert the Origin & Destination in the Graph, in order for the pathfinding to occur (Quick Reminder: This is basically A* but instead of searching tile-per-tile, we are using as a possible pathfinding "positions to iterate" the nodes &, as adjacents, the connections they have, the Edges)
+   
+```cpp
+HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
+{
+
+	HierNode* newNode = nullptr;
+	Cluster* c;
+
+	if (!App->pathfinding->IsWalkable(pos))
+		return nullptr;
+
+	//Determine the cluster
+	c = DetermineCluster(pos, Lvl);
+	if (!c)
+		return nullptr;
+
+	//Check if already exists
+	newNode = NodeExists(pos, c);
+
+	//If can be placed inside a cluster & there is no node already there, we create one
+	if (!newNode)
+	{
+		newNode = new HierNode(pos);
+		c->clustNodes.push_back(newNode);
+		
+		//Connects a recently introduced node to it's peers in the same cluster
+		ConnectNodeToBorder(newNode, c, Lvl);
+		
+		*toDelete = true;
+	}
+
+	return newNode;
+}
+```
+
+   - The Node insertion is simple, we exit if the Node position is non-walkable or it doesn't belong to any cluster (this should never happen); then we check if the node is in a exact same position as another one already existent (in order to avoid repeating an insertion process we already made). If the Node doesn't exist, we create it, insert it to the Node Vector of the Cluster & we create the Intra Edges to the Nodes in the same Clusters (ConnectToBorder() ).
+
+
+```cpp
+void HPAGraph::ConnectNodeToBorder(HierNode* node, Cluster* c, int lvl)
+{
+	float distanceTo = 0;
+	for (int i = 0; i < c->clustNodes.size(); i++)
+	{
+		//To calculate the cost to the node peers, we should do A* and get the cost from there
+		// But this is very slow, so we  will do a RayCast Check first; this is a little less accurate but far more faster
+		if (App->pathfinding->LineRayCast(node->pos, c->clustNodes[i]->pos))
+		{
+			distanceTo = App->pathfinding->GetLastLine()->size();
+		}
+		else
+			distanceTo = App->pathfinding->SimpleAPathfinding(node->pos, c->clustNodes[i]->pos);
+
+
+		//Create the edges between the two nodes
+		node->edges.push_back(new Edge(c->clustNodes[i], distanceTo, lvl, EDGE_TYPE::INTRA));
+		c->clustNodes[i]->edges.push_back(new Edge(node, distanceTo, lvl, EDGE_TYPE::INTRA));
+	}
+
+}
+```
+   - This method is no different from the Intra Nodes connection we have checked before, but it has one key difference: we first do a quick RayCast check to connect it to its Neightbors before doind the A*; this is because it's way faster & gives more than okay results.
+
+
+> Following the Map example it would look something like this (being the O & D the Origin and Destination respectively & the Yellow lines the Edges we just create using the ConnectToBorder() method):
+	
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/nodesAndEdgesWithG%26D.png"  width="60%" height="60%">
+</p>
   
+ > Remember that the images only has the Intra Edges for one Cluster! It should have that for every Cluster of the Graph.
+  
+  - Since the Deltion Method is trivial, we are going to check out the actual algorithm:
+  
+```cpp  
+int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& destination, int lvl)
+{
+	BROFILER_CATEGORY("HPA Algorithm", Profiler::Color::AliceBlue);
+
+	last_path.clear();
+
+	//Variable declaration-----
+	//Open & Closed
+	std::multimap<float, HierNode> open;
+	std::vector<HierNode> closed;
+
+	//Analize the current
+	HierNode* curr = nullptr;
+	std::multimap<float, HierNode>::iterator lowest;
+
+	// Get New Nodes
+	uint limit = 0;
+	std::vector<HierNode> adjList;
+	std::multimap<float, HierNode>::iterator it2;
+
+
+	open.insert(std::pair<float, HierNode>(0.f, origin));
+
+
+	while (open.empty() == false)
+	{
+		lowest = open.begin();
+		closed.push_back(lowest->second);
+		curr = &closed.back();
+
+		curr->myDirection = (closed.size() - 1);
+		open.erase(lowest);
+
+
+		if (curr->pos == destination)
+		{
+			int dir;
+			for (curr; curr->pos != origin.pos; curr = &closed[dir])
+			{
+				last_path.push_back(curr->pos);
+				dir = curr->parentDir;
+			}
+			last_path.push_back(origin.pos);
+
+			std::reverse(last_path.begin(), last_path.end());
+
+			return 0;
+		}
+
+		limit = curr->FindWalkableAdjacents(adjList, lvl);
+
+		for (uint i = 0; i < limit; i++)
+		{
+
+			if (FindV(adjList[i].pos, &closed) == closed.size())
+			{
+				it2 = Find(adjList[i].pos, &open);
+				adjList[i].CalculateF(destination);
+				if (it2 == open.end())
+				{
+					open.insert(std::pair<float, HierNode>(adjList[i].Score(), adjList[i]));
+				}
+				else
+				{
+					if (adjList[i].Score() < it2->second.Score())
+					{
+						open.erase(Find(adjList[i].pos, &open));
+						open.insert(std::pair<float, HierNode>(adjList[i].Score(), adjList[i]));
+					}
+				}
+			}
+		}
+		adjList.clear();
+	}
+}
+
+uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl)
+{
+	int edgeNum = edges.size();
+	HierNode* currNode = nullptr;
+	Edge* currEdge = nullptr;
+
+
+	//Iterate though all the node edges
+	for (int i = 0; i < edgeNum; i++)
+	{
+		currEdge = edges[i];
+
+		//Checks if the edge has the correct level to put it in the list
+			//INTRA: have to be from the same level
+			//INTER: can be from the same level or superior
+		if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl == lvl || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl >= lvl)
+		{
+			currNode = currEdge->dest;
+			list_to_fill.push_back(HierNode(currEdge->moveCost + this->g, currNode->pos, this, myDirection, 0, currNode->edges));
+		}
+
+	}
+
+	//---
+
+
+
+	return list_to_fill.size();
+}
+
+float HierNode::CalculateF(const iPoint& destination)
+{
+	h = pos.OctileDistance(destination);
+
+	return g + h;
+}
+
+```
+   - As you can see, this is basically A*. The only difference in that while searching for the Node adjacents, we grab the Nodes that our edges point to, being the cost to move the one we previously calculated with A*.
+    - One remarkable thing is that we used OctileDistance to calculate the h; I used this because it allows diagonals & is fastly computed. If you want to know more about Pathfinding Distance Heuristics I encourage you to check the [Red Blob Games article about them](https://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#euclidean-distance-squared).
+
+#### Refinemt & Smooth Process
+
+> Finishing the Hierarchial Path, we would have a path that would look something like this:
+	
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/abstractPath.png"  width="60%" height="60%">
+</p>
+  
+  - But this is not usable, we have to refine it. My approach for the refinement has been quite inusual; instead of refining all the Path when we calculate it, I made the agents that pathfind request a path every time something happens (say the path they currently have is too small, a certain amount of time has passed, etc.). I think this approach is usable from a videogame perspective, since we will just calculate the path when needed & the player wil not even notice. 
+  
+  - The code looks something like this (I have not included all the logic behind requesting, just the refinement function; if you want to know about it, ask me directly or check the  [Full Code](https://github.com/AlexMelenchon/Hierarchial-Pathfinding-Research/tree/master/full_code):
+  
+  ```cpp   
+bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, int lvl, std::vector<iPoint>* pathToFill)
+{
+	iPoint currPos = { -1, -1 };
+	iPoint startPos = { -1, -1 };
+
+	int from = -1;
+	Cluster* startCluster = nullptr;
+
+	int pathSize = abstractPath->size();
+
+	for (int i = 0; i < pathSize; i)
+	{
+		currPos = abstractPath->at(i);
+
+		//Grab the first node
+		if (startPos.x == -1)
+		{
+			startPos = currPos;
+			from = i;
+			startCluster = absGraph.DetermineCluster(startPos, lvl);
+			i++;
+			continue;
+		}
+
+		//Two Conditions to make path:
+			//Check that Distance is not greater than Cluster Size
+			//Not be the last node
+
+		if (startCluster != absGraph.DetermineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
+		{
+
+			std::vector <iPoint>* generatedPath = nullptr;
+
+			//First Quick Check w/Ray Cast
+			if (LineRayCast(startPos, currPos) && !last_line.empty())
+			{
+				generatedPath = &last_line;
+			}
+
+			//If the Ray Cast fails, we have to do A* to connect the nodes
+			else if (SimpleAPathfinding(startPos, currPos) && !last_path.empty())
+			{
+				generatedPath = &last_path;
+			}
+
+			//If the refinement was succesfull, we added to the request
+			if (generatedPath != nullptr)
+			{
+				//Last & not last cases:
+					//We don't want to introduce the first one since it will overlap with the last one already refined
+					/// If our code for following the path is solid this isn't necessary but it's nice to have
+				if (pathToFill->size() > 0)
+					pathToFill->insert(pathToFill->end(), generatedPath->begin() + 1, generatedPath->end());
+				else
+					pathToFill->insert(pathToFill->end(), generatedPath->begin(), generatedPath->end());
+			}
+
+
+			//Delete the abstract nodes we just refined
+			abstractPath->erase(abstractPath->begin() + from, abstractPath->begin() + i);
+
+			return true;
+		}
+		//---
+		else
+		{
+			abstractPath->erase(abstractPath->begin() + 1);
+			pathSize--;
+			continue;
+		}
+
+	}
+
+	return false;
+}
+```
+  
+   - Here we check the Abstract Path we calculate, get the first position available  and from there we check if the next position is on another Cluster or it is the last one of the Abstract Path, if it is not, we delete it from the path and if so we refine it (These are "regular" conditions, you change them if you want but I recommend this for general purporses but, please, change them according to your needs).
+      - The process of refinement is quite simple, we just run our algorithm between the positions we determined, delete those positions from the Abstract Path & then return the refined part. But, in order to Smooth it and make it faster, I added that, if the positions we are trying to get to is visible for the Starter one we just make a line (a simple 2D Raycast); this makes the path more accurate & the refinement faster (same as above, you could get creative here; you could check all the nodes with raycast, refine more than 2 positions, etc.)
+      
+> And that is it! Our path would look something like this:
+	
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/PathFullyRefined.png"  width="60%" height="60%">
+</p>      
+
+    
+#### The Results
+
+
 ## Possible Improvements & Changes
 - **[1]** : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
 - **[2]**: another option is to pre-calculate all of this and then load it when the map is calculated (this includes Entrances, Clusters, Nodes & Edges); but since our project is small, I decided to do it this way.
