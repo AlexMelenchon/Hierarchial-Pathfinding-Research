@@ -863,9 +863,9 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
    
   <p align="center"> 
 	
-|  A*  |   HPA*   |
-| ------------- | ------------- |
-| O (N) |  O( log(N) ) |
+| A*    | HPA*       |
+|-------|------------|
+| O (N) | O( log(N)) |
 
 </p>
 
