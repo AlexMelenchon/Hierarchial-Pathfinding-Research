@@ -884,6 +884,10 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
    - These are a handful of results for my approach, if you want to check more results you there you have a graphic from [Near Optimal Hierarchical Path-Finding paper](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf):
 
    
+   <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/HpaVsA.png"  width="60%" height="60%">
+</p>      
+   
    - There are more interesting metric in the Paper, but here is a quick summary:
    
 	  - From these we can conclude that, the more larger the path to compute the more the HPA* takes advantage on regualar A*. 
@@ -893,6 +897,129 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 	  - If you play around with the RayCast and the RefineAndSmooth(), you can get near-optimal path quality.
 	  
 ## TODO's
+With all the explanation out of the window, we are now ready to complete the TODO's. These are small exercises guided by code comments that are intended to taught you about the HPA* in a more practical sense. I'll walk you through all the process explained above so you can fully understand the implementation. Once you finish all the TODO’s you will have a fully functional HPA*.
+
+### TODO 0
+- Not much to say about this one; if you are familiar with A*, just look around the code & check how everything is wired up in order to not get lost in the next TODO's!
+
+### TODO 1
+- Here you just have to uncomment the two lines down the comment. Not much, to do here but the sauce is found in the next two sub-divisions:
+
+#### TODO 1.1
+- The clusters are created regulary here.The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1) & then add it to the  vector of clusters vectors (ask me about this :P) we have already declared (*2)
+
+```cpp   
+void HPAGraph::BuildClusters(int lvl)
+{
+	//TODO 1.1: The clusters are created regulary here.
+	// The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1) & then add it to the
+	// vector of clusters vectors (ask me about this :P) we have already declared (*2)
+
+	//Cluster distance in the current level
+	int clustSize = CLUSTER_SIZE_LVL * lvl;
+
+	//Buffer vector
+	std::vector <Cluster> clusterVector;
+
+	int width = App->pathfinding->mapWidth;
+	int height = App->pathfinding->mapHeight;
+
+	Cluster c;
+
+	//We will create the cluster in a row-column order
+	for (int i = 0; i < width; i += clustSize)
+	{
+		//Check if the cluster would extend beyond the map
+		if (i + clustSize > width)
+			c.width = width - (i);
+		else
+			c.width = clustSize;
+
+		for (int k = 0; k < height; k += clustSize)
+		{
+
+			//Check if the cluster would extend beyond the map
+			if (k + clustSize > height)
+				c.height = height - (k);
+			else
+				c.height = clustSize;
+
+			//Introduce the Cluster into the vector buffer
+			c.pos = { i,k };
+			//------ (*1)
+
+		}
+	}
+
+	//Introduce the vector to the main one
+	//------ (*2)
+
+}
+}
+
+```
+
+
+- Solution:
+```cpp   
+void HPAGraph::BuildClusters(int lvl)
+{
+	//TODO 1.1: The clusters are created regulary here.
+	// The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1) & then add it to the
+	// vector of clusters vectors (ask me about this :P) we have already declared (*2)
+
+
+	//Cluster distance in the current level
+	int clustSize = CLUSTER_SIZE_LVL * lvl;
+
+	//Buffer vector
+	std::vector <Cluster> clusterVector;
+
+
+	int width = App->pathfinding->mapWidth;
+	int height = App->pathfinding->mapHeight;
+
+	Cluster c;
+
+	//We will create the cluster in a row-column order
+	for (int i = 0; i < width; i += clustSize)
+	{
+
+		//Check if the cluster would extend beyond the map
+		if (i + clustSize > width)
+			c.width = width - (i);
+		else
+			c.width = clustSize;
+
+		for (int k = 0; k < height; k += clustSize)
+		{
+
+			//Check if the cluster would extend beyond the map
+			if (k + clustSize > height)
+				c.height = height - (k);
+			else
+				c.height = clustSize;
+
+			//Introduce the Cluster into the vector buffer
+			c.pos = { i,k };
+			//------ (*1)
+			clusterVector.push_back(Cluster(c));
+		}
+	}
+
+	//Introduce the vector to the main one
+	//------ (*2)
+	this->lvlClusters.push_back(clusterVector);
+}
+
+```
+- Expected Result:
+	- When pressing F2, this should appear in your screen:
+	
+
+
+
+#### TODO 1.2
 
 
 ## Possible Improvements & Changes
