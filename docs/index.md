@@ -524,6 +524,8 @@ void CreateEdges(HierNode* n1, HierNode* n2, int lvl, EDGE_TYPE type)
    - Just a thing to point here; note that we check if the EdgeExists (& if so we don't make another one) just for the INTER edges, we always create the INTRA edges. This has an explanation:
    
    - For Multiple-Level Search: we have to Level Up the existent Edges. In order to indicate that they are from a different abstraction level (Edge struct has a variable lvl and EdgeExists automatically levels up the Edges) but there is a catch: we can only do this for INTER edges, since they are the same (because higher abstraction Clusters are just groups of lower-level clusters) but it's not the same case for the INTRA edges, since they can change; therefor, when we seach we can do it for INTER edges that are the same level or above (since, I repeat, are the same) but we must just search for INTRA nodes that are from the same level, since they can change; even though it's not guaranteed that they do.
+   
+   - Also, as a sidenote; instead of savingg up the Cost when calculating the Cost for the Edges, instead, you could just save the Path. These would save up a little of time in the Refinement Process but take up a whole lot of memory. **[5]**
 	
 > Back at our map, now this makes sense: the RED represents the Nodes, the GREN the Inter Edges & the BLUE the Intra Edges (they are calculated just in one Cluster)
 	
@@ -852,13 +854,52 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/images/PathFullyRefined.png"  width="60%" height="60%">
 </p>      
 
+   > IMPORTANT: this is not the Full Code, if you want to know more about it, I encourage you to take a look at the [Full Code](https://github.com/AlexMelenchon/Hierarchial-Pathfinding-Research/tree/master/full_code) or do the TODO's listed below.
+
     
-#### The Results
+    
+### The Results
+   - To better understand the results, first of all we have to know the worst computational cost of both the A* & the HPA*:
+   
+  <p align="center"> 
+	
+   |  A*  |   HPA*   |
+| ------------- | ------------- |
+| O (N) |  O( log(N) ) ||
+
+</p>
+
+   > Being N the length of the path to check. I got this information from the [GDC Hierarchical Dynamic Pathfinding presentation I mentioned before](https://twvideo01.ubm-us.net/o1/vault/gdc2018/presentations/Alain_Benoit_HierarchicalDynamicPathfinding.pdf)
+
+   - Now into the Results, this was computed on a i5-4960K with 8GB of DDR3 1333Mhz running on a 64bit Windows 10 on a RELEASE:
+
+<p align="center">
+
+|   |  Computation Time  |   Solution Length   |
+| ------------| ------------- | ------------- |
+|A* | 7.3ms | 126 |
+|HPA* ( on avg.) |1.18ms (0.2ms to Insert + 0.9ms to Pathfind)  | 34 ||
+
+
+   - These are a handful of results for my approach, if you want to check more results you there you have a graphic from [Near Optimal Hierarchical Path-Finding paper](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf):
+
+   
+   - There are more interesting metric in the Paper, but here is a quick summary:
+   
+	  - From these we can conclude that, the more larger the path to compute the more the HPA* takes advantage on regualar A*. 
+	  - Multiple levels of abstraction help, but they are useful just when you are dealing with very large paths. Since the bigger the level, the less nodes you will have to explore, but the more expensive will the Connect to Border process be.
+	  - HPA* is way faster than A*, but, be careful, it takes a chunk of memory to work.
+	  - Can be combined with Time Slicing &  other improvement to the A* that change the algorithm. 
+	  - If you play around with the RayCast and the RefineAndSmooth(), you can get near-optimal path quality.
+	  
+## TODO's
 
 
 ## Possible Improvements & Changes
 - **[1]** : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
 - **[2]**: another option is to pre-calculate all of this and then load it when the map is calculated (this includes Entrances, Clusters, Nodes & Edges); but since our project is small, I decided to do it this way.
 - **[3]**:  you could have a different approach in how you make the Clusters size (irregular is always an option) but you can have it be x2 larger than the previous one, etc.
-- **[4]**:  This is inspired by the HNA* method; which basically makes the Clusters moldable to terrain, not the Entrances. If you wanna know more check out [THIS](https://web.archive.org/web/20190725152735/http://aigamedev.com/open/tutorials/clearance-based-pathfinding/)
+- **[4]**:  This is inspired by the HNA* method; which basically makes the Clusters moldable to terrain, not the Entrances. If you want to know more check out [THIS](https://web.archive.org/web/20190725152735/http://aigamedev.com/open/tutorials/clearance-based-pathfinding/)
+- **[5]**: instead of savingg up the Cost when calculating the Cost for the Edges, instead, you could just save the Path. These would save up a little of time in the Refinement Process (since, instead of using RayCast or the A*; you would just insert the path already calculated) but take up a whole lot of memory.
+- **[6]**:  Currently, the code does not support for dynamic obstacles to be placed; in order to do this, you would haveto detect in which Clusters the dynamic object has been placed, "block" the Nodes that overlap with it & re-compute all the edges inside those Clusters. If you want to know more, check out [THIS](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf)
 
