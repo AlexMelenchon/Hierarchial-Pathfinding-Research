@@ -899,6 +899,10 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 ## TODO's
 With all the explanation out of the window, we are now ready to complete the TODO's. These are small exercises guided by code comments that are intended to taught you about the HPA* in a more practical sense. I'll walk you through all the process explained above so you can fully understand the implementation. Once you finish all the TODO’s you will have a fully functional HPA*.
 
+> IMPORTANT NOTE: All the places where you have to write code are marked with " //----- ".
+
+> > IMPORTANT NOTE: To check all the debug functionallities, please check the README inside the project, thanks!
+
 ### TODO 0
 - Not much to say about this one; if you are familiar with A*, just look around the code & check how everything is wired up in order to not get lost in the next TODO's!
 
@@ -906,7 +910,7 @@ With all the explanation out of the window, we are now ready to complete the TOD
 - Here you just have to uncomment the two lines down the comment. Not much, to do here but the sauce is found in the next two sub-divisions:
 
 #### TODO 1.1
-- The clusters are created regulary here.The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1) & then add it to the  vector of clusters vectors (ask me about this :P) we have already declared (*2)
+- The clusters are created regulary here.The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1*) & then add it to the  vector of clusters vectors (ask me about this :P) we have already declared (*2*)
 
 ```cpp   
 void HPAGraph::BuildClusters(int lvl)
@@ -1014,13 +1018,879 @@ void HPAGraph::BuildClusters(int lvl)
 
 ```
 - Expected Result:
-	- When pressing F2, this should appear in your screen:
+	- When pressing F2, the groups of tiles named Clusters should appear in your screen like this:
 	
-
-
+   <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO1.1.gif"  width="60%" height="60%">
+</p>
 
 #### TODO 1.2
+- Here we iterate through all the clusters; just check if a pair of clusters are adjacents & if so create an entrance between them. Check out the functions ClustersAreAdjacent() & CreateEntrance()
 
+```cpp   
+void HPAGraph::BuildEntrances()
+{
+	Cluster* c1 = nullptr;
+	Cluster* c2 = nullptr;
+	ADJACENT_DIR adjacentDir = ADJACENT_DIR::DIR_NONE;
+
+	// Since the Entrances are just created in the lowest abstraction LVL, their lvl is always 0
+	int EntranceLvl = 1;
+
+	//TODO 1.2: Here we iterate through all the clusters; just check if a pair of clusters are adjacents & if so create an entrance between them
+	// Check the functions ClustersAreAdjacent() & CreateEntrance()
+
+	//We simply iterate though the clusters & check if they are adjacent, if so we put an entrance between them
+	for (uint i = 0; i < this->lvlClusters[0].size(); ++i)
+	{
+		c1 = &this->lvlClusters[0].at(i);
+
+		for (uint k = i + 1; k < this->lvlClusters[0].size(); ++k)
+		{
+			c2 = &this->lvlClusters[0].at(k);
+
+			//----
+
+		}
+	}
+}
+
+
+```
+
+
+- Solution:
+```cpp   
+
+void HPAGraph::BuildEntrances()
+{
+	Cluster* c1;
+	Cluster* c2;
+	ADJACENT_DIR adjacentDir = ADJACENT_DIR::DIR_NONE;
+
+	// Since the Entrances are just created in the lowest abstraction LVL, their lvl is always 0
+	int EntranceLvl = 1;
+
+	//TODO 1.2: Here we iterate through all the clusters; just check if a pair of clusters is adjacent & if so create entrances for it
+	// Check the functions ClustersAreAdjacent() & CreateEntrance()
+
+	//We simply iterate though the clusters & check if they are adjacent, if so we put an entrance between them
+	for (uint i = 0; i < this->lvlClusters[0].size(); ++i)
+	{
+		c1 = &this->lvlClusters[0].at(i);
+
+		for (uint k = i + 1; k < this->lvlClusters[0].size(); ++k)
+		{
+			c2 = &this->lvlClusters[0].at(k);
+
+			//----
+			adjacentDir = ClustersAreAdjacent(c1, c2, EntranceLvl);
+
+			if (adjacentDir != ADJACENT_DIR::DIR_NONE)
+				CreateEntrance(c1, c2, adjacentDir, EntranceLvl);
+
+		}
+	}
+}
+
+```
+- Expected Result:
+	- When pressing F1, the entrances between the previous Cluster should appear like this:
+	
+   <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO1.2.gif"  width="60%" height="60%">
+</p>
+
+### TODO 2
+- Same as TODO 1, just uncomment the two lines down the comment. Not much, to do here but the sauce is found in the next two sub-divisions:
+
+#### TODO 2.1
+- Here the Nodes between Clusters are created. Just check how lateral is created & then do the vertical one (the logic is the same, you just have to change the axis). Be careful with the position!
+
+```cpp   
+void HPAGraph::CreateInterNodes(int lvl)
+{
+	Entrance* currEntrance;
+	Cluster* c1, * c2;
+
+	//TODO 2.1: Here the Nodes between Clusters are created.
+	// Just check how lateral is created & then do the vertical one (the logic is the same, you just have to change the axis)
+	// Be careful with the position!
+
+	for (uint i = 0; i < entrances.size(); i++)
+	{
+		currEntrance = &entrances[i];
+
+		switch (currEntrance->dir)
+		{
+		case ADJACENT_DIR::LATERAL:
+		{
+
+			//First of all we check if the clusters are adjacents
+			c1 = DetermineCluster(currEntrance->pos, lvl);
+			c2 = DetermineCluster({ currEntrance->pos.x + 1, currEntrance->pos.y }, lvl);
+
+			if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
+				continue;
+
+
+			//Build the max. number of nodes that can we built based on the cluster size & the min distance we established
+			int maxSize = (currEntrance->pos.y + currEntrance->height);
+
+			for (int i = currEntrance->pos.y; i < maxSize; i += NODE_MIN_DISTANCE)
+			{
+				BuildInterNode({ currEntrance->pos.x,i }, c1, { currEntrance->pos.x + 1, i }, c2, lvl);
+			}
+
+			//We make sure that the last spot has a node for path stability
+			BuildInterNode({ currEntrance->pos.x, maxSize - 1 }, c1, { currEntrance->pos.x + 1, maxSize - 1 }, c2, lvl);
+
+		}
+		break;
+		case ADJACENT_DIR::VERTICAL:
+		{
+			//---
+
+		}
+		break;
+		}
+
+	}
+}
+
+```
+
+
+- Solution:
+```cpp   
+void HPAGraph::CreateInterNodes(int lvl)
+{
+	Entrance* currEntrance = nullptr;
+	Cluster* c1, * c2;
+
+	//TODO 2.1: Here the Nodes between Clusters are created.
+	// Just check how lateral is created & then do the vertical one (the logic is the same, you just have to change the axis)
+	// Be careful with the position!
+
+	for (uint i = 0; i < entrances.size(); i++)
+	{
+		currEntrance = &entrances[i];
+
+		switch (currEntrance->dir)
+		{
+		case ADJACENT_DIR::LATERAL:
+		{
+
+			//First of all we check if the clusters are adjacents
+			c1 = DetermineCluster(currEntrance->pos, lvl);
+			c2 = DetermineCluster({ currEntrance->pos.x + 1, currEntrance->pos.y }, lvl);
+
+			if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::LATERAL)
+				continue;
+
+
+			//Build the max. number of nodes that can we built based on the cluster size & the min distance we established
+			int maxSize = (currEntrance->pos.y + currEntrance->height);
+
+			for (int i = currEntrance->pos.y; i < maxSize; i += NODE_MIN_DISTANCE)
+			{
+				BuildInterNode({ currEntrance->pos.x,i }, c1, { currEntrance->pos.x + 1, i }, c2, lvl);
+			}
+
+			//We make sure that the last spot has a node for path stability
+			BuildInterNode({ currEntrance->pos.x, maxSize - 1 }, c1, { currEntrance->pos.x + 1, maxSize - 1 }, c2, lvl);
+
+		}
+		break;
+		case ADJACENT_DIR::VERTICAL:
+		{
+			//---
+			//First of all we check if the clusters are adjacents
+			c1 = DetermineCluster(currEntrance->pos, lvl);
+			c2 = DetermineCluster({ currEntrance->pos.x, currEntrance->pos.y + 1 }, lvl);
+
+			if (ClustersAreAdjacent(c1, c2, lvl) != ADJACENT_DIR::VERTICAL)
+				continue;
+
+
+			//Build the max. number of nodes that can we built based on the cluster size & the min distance we established
+			int maxSize = (currEntrance->pos.x + currEntrance->width);
+
+			for (int i = currEntrance->pos.x; i < maxSize; i += NODE_MIN_DISTANCE)
+			{
+				//if (!NodeExists({ i+1, currEntrance->pos.y }) && !NodeExists({ currEntrance->pos.x,i - 1 }))
+				BuildInterNode({ i, currEntrance->pos.y }, c1, { i, currEntrance->pos.y + 1 }, c2, lvl);
+			}
+
+			//We make sure that the last spot has a node for path stability
+			BuildInterNode({ maxSize - 1, currEntrance->pos.y }, c1, { maxSize - 1, currEntrance->pos.y + 1 }, c2, lvl);
+
+		}
+		break;
+		}
+
+	}
+}
+
+```
+- Expected Result:
+	- When pressing F3, the Nodes connecting the Clusters should appear in BOTH AXIS, just like this:
+	
+   <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%202.1.gif"  width="60%" height="60%">
+	</p>
+
+
+#### TODO 2.2
+- Here we iterate through all the clusters; just check if a pair of clusters are adjacents & if so create an entrance between them. Check out the functions ClustersAreAdjacent() & CreateEntrance()
+
+```cpp   
+void HPAGraph::CreateIntraNodes(int lvl)
+{
+	Cluster* clusterIt;
+	float distanceTo = 0;
+	int clusterLevel = lvl - 1;
+	int edgeLevel = lvl;
+
+	HierNode* n1 = nullptr;
+	HierNode* n2 = nullptr;
+
+	if (clusterLevel > lvlClusters.size() || lvlClusters.empty())
+		return;
+
+	//TODO 2.2: Here we iterate trough all the nodes in a same cluster for all the cluster in a same level
+	// Simply call the function to create edges between the different nodes with the INTRA type
+	// Check the function CreateEdges()
+
+	for (int i = 0; i < lvlClusters[clusterLevel].size(); i++)
+	{
+		clusterIt = &lvlClusters[clusterLevel].at(i);
+
+		for (int y = 0; y < clusterIt->clustNodes.size(); y++)
+		{
+			n1 = clusterIt->clustNodes[y];
+			for (int k = y + 1; k < clusterIt->clustNodes.size(); k++)
+			{
+				n2 = clusterIt->clustNodes[k];
+
+				//--
+				
+			}
+		}
+	}
+}
+
+```
+
+
+- Solution:
+```cpp   
+oid HPAGraph::CreateIntraNodes(int lvl)
+{
+	Cluster* clusterIt;
+	float distanceTo = 0;
+	int clusterLevel = lvl - 1;
+	int edgeLevel = lvl;
+
+	HierNode* n1 = nullptr;
+	HierNode* n2 = nullptr;
+
+	if (clusterLevel > lvlClusters.size() || lvlClusters.empty())
+		return;
+
+	//TODO 2.2: Here we iterate trough all the nodes in a same cluster for all the cluster in a same level
+	// Simply call the function to create edges between the different nodes with the INTRA type
+	// Check the function CreateEdges()
+
+	for (int i = 0; i < lvlClusters[clusterLevel].size(); i++)
+	{
+		clusterIt = &lvlClusters[clusterLevel].at(i);
+
+		for (int y = 0; y < clusterIt->clustNodes.size(); y++)
+		{
+			for (int k = y + 1; k < clusterIt->clustNodes.size(); k++)
+			{
+				//--
+				CreateEdges(clusterIt->clustNodes[y], clusterIt->clustNodes[k], edgeLevel, EDGE_TYPE::INTRA);
+
+			}
+		}
+	}
+}
+
+
+```
+- Expected Result:
+	- When pressing F4 (with the Nodes viewable (press F3)), all the connections between Nodes, the Edges, should appear like this:
+	
+   <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO1.2.gif"  width="60%" height="60%">
+</p>
+	
+	
+### TODO 3
+- Noww all the Graph processing work is Done! Now we will move into the Pathfinding function itself. First of all, we have to introduce the Nodes into the Graph in order to be able to perform HPA*.
+
+-This is simple, if the node exist in the cluster we do not do anything. If it doesn't exist, create it: you'll have to push it in the cluster Node Vector & connect it t the other nodes in the same cluster (Check ConnectNodeToBorder()).
+
+```cpp   
+HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
+{
+	BROFILER_CATEGORY("Insert Node", Profiler::Color::Cornsilk);
+
+	HierNode* newNode = nullptr;
+	Cluster* c;
+
+	if (!App->pathfinding->IsWalkable(pos))
+		return nullptr;
+
+	//Determine the cluster
+	c = DetermineCluster(pos, Lvl);
+	if (!c)
+		return nullptr;
+
+
+	//TODO 3: This is simple, if the node exist in the cluster we do not do anything 
+	// If it doesn't exist, create it: you'll have to push it in the cluster Node Vector (ClustNodes) & connect it t the other nodes in the same
+	// cluster (Check ConnectNodeToBorder()).
+
+
+	//Check if already exists
+	newNode = NodeExists(pos, c);
+
+
+	//If can be placed inside a cluster & there is no node already there, we create one
+	if (!newNode)
+	{
+		//----
+
+		*toDelete = true;
+	}
+
+	//---
+
+	return newNode;
+}
+
+
+```
+
+
+- Solution:
+```cpp   
+
+HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
+{
+	BROFILER_CATEGORY("Insert Node", Profiler::Color::Cornsilk);
+
+	HierNode* newNode = nullptr;
+	Cluster* c;
+
+	if (!App->pathfinding->IsWalkable(pos))
+		return nullptr;
+
+	//Determine the cluster
+	c = DetermineCluster(pos, Lvl);
+	if (!c)
+		return nullptr;
+
+	//TODO 3: This is simple, if the node exist in the cluster we do not do anything 
+	// If it doesn't exist, create it: you'll have to push it in the cluster Node Vector (ClustNodes)  & connect it t the other nodes in the same
+	// cluster (Check ConnectNodeToBorder()).
+
+	//Check if already exists
+	newNode = NodeExists(pos, c);
+
+	//If can be placed inside a cluster & there is no node already there, we create one
+	if (!newNode)
+	{
+		newNode = new HierNode(pos);
+		c->clustNodes.push_back(newNode);
+		ConnectNodeToBorder(newNode, c, Lvl);
+		*toDelete = true;
+	}
+
+	return newNode;
+}
+
+```
+- Expected Result:
+	- Proceed to the next TODO to check it visually!
+	
+### TODO 4.
+- et's find the walkable node adjacents. We have to iterate though all the HierNode's edges. But that is already done, you just have to Create new Hiernodes & Insert them into the list. The Hiernodes will we determined by the Edges movement Cost & it's destination Node (Take a look at the Edge Struct). Remeber that the G has to be calculated when the Hiernode is inserted!
+
+```cpp   
+uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl)
+{
+	int edgeNum = edges.size();
+	HierNode* currNode = nullptr;
+	Edge* currEdge = nullptr;
+
+
+	// TODO 4: Let's find the walkable node adjacents. We have to iterate though all the HierNode's edges 
+	// But that is already done, you just have to Create new Hiernodes & Insert them into the list
+	//The Hiernodes will we determined by the Edges movement Cost & it's destination Node (Take a look at the Edge Struct)
+	//Remeber that the G has to be calculated when the Hiernode is inserted!
+	
+	for (int i = 0; i < edgeNum; i++)
+	{
+		currEdge = edges[i];
+
+		//LOOK OUT!! Checks if the edge has the correct level to put it in the list (Ask me about this :P):
+			//INTRA: have to be from the same level
+			//INTER: can be from the same level or superior
+		if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl == lvl || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl >= lvl)
+		{
+			//----
+
+		}
+
+	}
+
+	return list_to_fill.size();
+}
+}
+
+
+```
+
+
+- Solution:
+```cpp   
+
+uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl)
+{
+	int edgeNum = edges.size();
+	HierNode* currNode = nullptr;
+	Edge* currEdge = nullptr;
+
+	// TODO 4: Let's find the walkable node adjacents. We have to iterate though all the HierNode's edges 
+	// But that is already done, you just have to Create new Hiernodes & Insert them into the list
+	//The Hiernodes will we determined by the Edges movement Cost & it's destination Node (Take a look at the Edge Struct)
+	//Remeber that the G has to be calculated when the Hiernode is inserted!
+
+
+	//Iterate though all the node edges
+	for (int i = 0; i < edgeNum; i++)
+	{
+		currEdge = edges[i];
+
+		//Checks if the edge has the correct level to put it in the list
+			//INTRA: have to be from the same level
+			//INTER: can be from the same level or superior
+		if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl == lvl || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl >= lvl)
+		{
+			//----
+			currNode = currEdge->dest;
+			list_to_fill.push_back(HierNode(currEdge->moveCost + this->g, currNode->pos, this, myDirection, 0, currNode->edges));
+		}
+
+	}
+
+
+	return list_to_fill.size();
+}
+
+```
+- Expected Result:
+	- If you click in two Walkable Points (with the Left Click of the mouse), you should see the abstract path reflected on the map, just like this:
+	
+ <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO3%264.gif"  width="60%" height="60%">
+</p>
+
+### TODO 5:
+- This is a big one. First of all read the whole function & understand what is happening
+
+### TODO 5.1:
+-  Currently the code just does nothing with the hierchial path, what you have to do is set the conditions to refine the path & actually refined. The conditions are: 
+	-Check that the current position is from a diferent cluster than the Start pne OR
+	-I t is the last node in the Abstract Path
+
+#### TODO 5.2:
+-  Then you will have to refine the Path, we have two ways to do this:
+	- RayCasting: Very fast, doesn't work through obstacles
+	- Direct A*: slower but can make whatever path you send to it.
+- The ideal situation would be to check with a RayCast first & if not succesfull make an A*
+- To insert the path, check the functions on the std::vector (Insert() might be usefull :P)
+			
+#### TODO 5.3:
+-  Do not forget to delete the nodes from the hierchial path after you have refined them Check the function on the std::vector erase()
+
+> This TODO is divided in three parts to better understanding, but, since it's all in the same function here you will find it as one.
+
+```cpp   
+bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, int lvl, std::vector<iPoint>* pathToFill)
+{
+	BROFILER_CATEGORY("Refine And Smooth Path", Profiler::Color::RosyBrown);
+
+	iPoint currPos = { -1, -1 };
+	iPoint startPos = { -1, -1 };
+
+	int from = -1;
+	int pathSize = abstractPath->size();
+
+	Cluster* fromC = nullptr;
+
+	for (int i = 0; i < pathSize; i)
+	{
+		currPos = abstractPath->at(i);
+
+		//Get the first node
+		if (startPos.x == -1)
+		{
+			startPos = currPos;
+			from = i;
+			fromC = absGraph.DetermineCluster(startPos, lvl);
+			i++;
+			continue;
+		}
+
+		//TODO 5: This is a big one. First of all read the whole function & understand what is happening
+
+		//TODO 5.1: Currently the code just does nothing with the hierchial path, what you have to do is set the 
+				// conditions to refine the path & actually refined. 
+				// The conditions are: 
+					//Check that the current position is from a diferent cluster than the Start pne OR
+					// It is the last node in the Abstract Path
+		//----
+		if (true)
+		{
+			//TODO 5.2: Then you will have to refine the Path, we have two ways to do this:
+							//RayCasting: Very fast, doesn't work through obstacles
+							// Direct A*: slower but can make whatever path you send to it.
+						//The ideal situation would be to check with a RayCast first & if not succesfull make an A*
+						//To insert the path, check the functions on the std::vector (Insert() might be usefull :P)
+			//-----
+
+
+			// TODO 5.3: Do not forget to delete the nodes from the hierchial path after you have refined them!
+			// Check the function on the std::vector erase()
+			//------
+
+			return true;
+		}
+		else
+		{
+			abstractPath->erase(abstractPath->begin() + 1);
+			pathSize--;
+			continue;
+		}
+
+	}
+
+	return false;
+}
+
+```
+
+
+- Solution:
+```cpp   
+bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, int lvl, std::vector<iPoint>* pathToFill)
+{
+	BROFILER_CATEGORY("Refine And Smooth Path", Profiler::Color::RosyBrown);
+
+	iPoint currPos = { -1, -1 };
+	iPoint startPos = { -1, -1 };
+
+	int from = -1;
+	Cluster* startCluster = nullptr;
+
+	int pathSize = abstractPath->size();
+
+	for (int i = 0; i < pathSize; i)
+	{
+		currPos = abstractPath->at(i);
+
+		//Grab the first node
+		if (startPos.x == -1)
+		{
+			startPos = currPos;
+			from = i;
+			startCluster = absGraph.DetermineCluster(startPos, lvl);
+			i++;
+			continue;
+		}
+
+		//TODO 5: This is a big one. First of all read the whole function & understand what is happening
+
+		//TODO 5.1: Currently the code just does nothing with the hierchial path, what you have to do is set the 
+				// conditions to refine the path & actually refined. 
+				// The conditions are: 
+					//Check that the current position is from a diferent cluster than the Start pne OR
+					// It is the last node in the Abstract Path
+
+		//Two Conditions to make path:
+			//Check that Distance is not greater than Cluster Size
+			//Not be the last node
+
+		//----
+		if (startCluster != absGraph.DetermineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
+		{
+
+			//TODO 5.2: Then you will have to refine the Path, we have two ways to do this:
+							//RayCasting: Very fast, doesn't work through obstacles
+							// Direct A*: slower but can make whatever path you send to it.
+						//The ideal situation would be to check with a RayCast first & if not succesfull make an A*
+						//To insert the path, check the functions on the std::vector (Insert() might be usefull :P)
+			//-----
+
+			std::vector <iPoint>* generatedPath = nullptr;
+
+			//First Quick Check w/Ray Cast
+			if (LineRayCast(startPos, currPos) && !last_line.empty())
+			{
+				generatedPath = &last_line;
+			}
+
+			//If the Ray Cast fails, we have to do A* to connect the nodes
+			else if (SimpleAPathfinding(startPos, currPos) && !last_path.empty())
+			{
+				generatedPath = &last_path;
+			}
+
+			//If the refinement was succesfull, we added to the request
+			if (generatedPath != nullptr)
+			{
+				//Last & not last cases:
+					//We don't want to introduce the first one since it will overlap with the last one already refined
+					/// If our code for following the path is solid this isn't necessary but it's nice to have
+				if (pathToFill->size() > 0)
+					pathToFill->insert(pathToFill->end(), generatedPath->begin() + 1, generatedPath->end());
+				else
+					pathToFill->insert(pathToFill->end(), generatedPath->begin(), generatedPath->end());
+			}
+
+			// TODO 5.3: Do not forget to delete the nodes from the hierchial path after you have refined them!
+			// Check the function on the std::vector erase()
+			//------
+			//Delete the abstract nodes we just refined
+			abstractPath->erase(abstractPath->begin() + from, abstractPath->begin() + i);
+
+			return true;
+		}
+		//---
+		else
+		{
+			abstractPath->erase(abstractPath->begin() + 1);
+			pathSize--;
+			continue;
+		}
+
+	}
+
+	return false;
+}
+
+```
+- Expected Result:
+	- When you make an Abstract Path in the Map, if you press down SPACE, you should see how it refines itself gradually (one press = one refinement):
+	
+ <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%205.gif"  width="60%" height="60%">
+</p>
+
+- **And congratulations, you have created an HPA* algorithm!! The following TODO's are optinal, but nice to have, although are specific & may or may not fit your project:**
+
+### TODO 6:
+- This one is going to be about entities and how they HPA*. First of all let's uncomment a very simple code that spawns entities in the mouse position:
+
+```cpp   
+	//TODO 6 (EXTRA): Let's have entities & make them HPA*. Uncomment the code
+
+	//if (App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
+	//{
+	//	int x, y;
+	//	App->input->GetMousePosition(x, y);
+	//	iPoint mousePos = App->render->ScreenToWorld(x, y);
+
+	//	if (App->pathfinding->IsWalkable(App->map->WorldToMap(mousePos.x, mousePos.y)))
+	//		App->entMan->AddNewEntity(ENTITY_TYPE::DYNAMIC, { (float)mousePos.x, (float)mousePos.y });
+	//}
+```
+
+
+- Solution:
+```cpp   
+	//TODO 6.0: Let's have entities & make them HPA*. Uncomment the code
+	//----
+	if (App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
+	{
+		int x, y;
+		App->input->GetMousePosition(x, y);
+		iPoint mousePos = App->render->ScreenToWorld(x, y);
+
+		if (App->pathfinding->IsWalkable(App->map->WorldToMap(mousePos.x, mousePos.y)))
+			App->entMan->AddNewEntity(ENTITY_TYPE::DYNAMIC, { (float)mousePos.x, (float)mousePos.y });
+	}
+	//----
+
+```
+- Expected Result:
+	- When you press 1 on the keyboard & have the mouse placed in a walkable tile, a rectangle that represents an entity should appear just like this:
+	
+ <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%206.gif"  width="60%" height="60%">
+</p>
+
+### TODO 6.1:
+-  Now you can select units & make them pathfind but there is no refinement going on... Let's change that! 
+- With everything set up, we just have to call the RequestPath() function and fill the entity's path. We can do this every frame, with a time condition, with a path legnth conditio...n; whatever fits your project!
+	
+```cpp   
+bool Entity::Move(float dt)
+{
+
+	fPoint pathSpeed = { 0,0 };
+	fPoint nextPoint = { 0,0 };
+
+	//TODO 6.1 (EXTRA): With everything set up, we just have to call the RequestPath() function and fill the entity's path
+		// We can do this every frame, with a time condition, with a path legnth conditio...n; whatever fits your project!
+	//----
+
+	if (path.size() > 0)
+	{
+	....
+```
+
+
+- Solution:
+```cpp   
+bool Entity::Move(float dt)
+{
+	//Speed is resetted to 0 each iteration
+	// ----------------------------------------------------------------
+
+	fPoint pathSpeed = { 0,0 };
+	fPoint nextPoint = { 0,0 };
+
+
+	//TODO 6.1 (EXTRA): With everything set up, we just have to call the RequestPath function and fill the entity's path
+	// We can do this every frame, with a time condition, with a path legnth conditio...n; whatever fits your project!
+	//----
+	if (path.size() < 2)
+	{
+		App->pathfinding->RequestPath(this, &path);
+	}
+	//----
+
+
+	if (path.size() > 0)
+	{
+	...
+
+```
+
+- Expected Result:
+	- As you can see, I have set a condition to do the path; whenever the unit sees that his path is less than 2 tiles long, it makes another request. You can change this to whatever you want!
+	- You can select the entities by keeping the Left Click of the mouse & dragging across the screen. This will create a green rectangle, whatever unit is inside the rectangle will be selected & marked in red. Then, if you press the right click anywhere walkable in the map, they should move to that destination, just like this
+	
+ <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%206.1.gif"  width="60%" height="60%">
+</p>
+
+#### TODO 6.2:
+-  This is the same as above but placed just below the Abstract Path calculation. This is to make sure that your unit starts pathfinding in the same frame as you path; this is not really necessary if your move code is solid but it never hurts to have it!
+
+```cpp   
+bool Entity::GeneratePath(int x, int y, int lvl)
+{
+	iPoint goal = { 0,0 };
+
+	origin = App->map->WorldToMap((position.x ), (position.y ));
+	goal = { x,y };
+
+	if (App->pathfinding->CreatePath(origin, goal, lvl, this) != PATH_TYPE::NO_TYPE)
+	{
+		path.clear();
+
+		//TODO 6.2 (EXTRA): This is optional, but it's nice to call a single RequestPath() when you generate the path
+		//----
+
+
+		if (!path.empty())
+			path.erase(path.begin());
+
+		return true;
+	}
+
+	return false;
+}
+```
+
+
+- Solution:
+
+```cpp   
+bool Entity::Move(float dt)
+{
+	//Speed is resetted to 0 each iteration
+	// ----------------------------------------------------------------
+
+	fPoint pathSpeed = { 0,0 };
+	fPoint nextPoint = { 0,0 };
+
+
+	//TODO 6.1 (EXTRA): With everything set up, we just have to call the RequestPath function and fill the entity's path
+	// We can do this every frame, with a time condition, with a path legnth conditio...n; whatever fits your project!
+	//----
+	if (path.size() < 2)
+	{
+		App->pathfinding->RequestPath(this, &path);
+	}
+	//----
+
+
+	if (path.size() > 0)
+	{
+	...
+
+```
+
+- Expected Result:
+	- Same as 3.1; just a little bit more consistent in code!
+			
+### TODO 7:
+-  As you might noticed, we are just doind a 1 level search since now, let's change that. Just uncomment the code and go to the define MAX_LEVELS to set how many levels you want. I encourage you to play around the CLUSTER_SIZE_LVL &  NODE_MIN_DISTANCE too!
+```cpp   
+	//TODO 7 (EXTRA): If you want more abstraction levels, just uncomment this 
+	// Just make sure the MAX_LEVELS define is above 1 & the TODO 4 is done correctly
+
+	//for (int l = 2; l <= maxLevel; l++)
+	//{
+		//absGraph.CreateGraphLvl(l);
+	//}
+
+```
+
+
+- Solution:
+```cpp   
+	//TODO 7 (EXTRA): If you want more abstraction levels, just uncomment this 
+	// Just make sure the MAX_LEVELS define is above 1 & the TODO 4 is done correctly
+
+	//Creates the rest of the graph levels
+	for (int l = 2; l <= maxLevel; l++)
+	{
+		absGraph.CreateGraphLvl(l);
+	}
+
+
+```
+- Expected Result:
+	- Now, if you press the F2, F3 & F4 to see the Clusters, Nodes & Edges and, then press the Arrow Keys Up & Down you will see how the abstraction levels change (when you pathfind you do it in that level too!). This example is just changing the MAX_LEVELS to 3:
+	
+ <p align="center">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%207.gif"  width="60%" height="60%">
+</p>
+
+### Homework
+- As a little of extra work I encourage you to do the following:
+	- Adapt this to your project!
+	- Play around with the values (levels, cluster size, etc.) and with the Refinement Method
+	- Make it dynamic (Check the posible improvements [6] )
 
 ## Possible Improvements & Changes
 - **[1]** : a possible improvement is to, instead of creating the Clusters for the next levels, is to group the Clusters from the previous level in groups of N Clusters.
@@ -1030,3 +1900,4 @@ void HPAGraph::BuildClusters(int lvl)
 - **[5]**: instead of savingg up the Cost when calculating the Cost for the Edges, instead, you could just save the Path. These would save up a little of time in the Refinement Process (since, instead of using RayCast or the A*; you would just insert the path already calculated) but take up a whole lot of memory.
 - **[6]**:  Currently, the code does not support for dynamic obstacles to be placed; in order to do this, you would haveto detect in which Clusters the dynamic object has been placed, "block" the Nodes that overlap with it & re-compute all the edges inside those Clusters. If you want to know more, check out [THIS](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf)
 
+## References and Extra Content
