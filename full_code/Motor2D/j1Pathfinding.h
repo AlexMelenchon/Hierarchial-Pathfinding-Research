@@ -26,7 +26,7 @@ enum class PATH_TYPE
 //HPA*-------------------------------------------
 #define NODE_MIN_DISTANCE 3
 #define CLUSTER_SIZE_LVL 5
-#define MAX_LEVELS 1
+#define MAX_LEVELS 3
 
 class HierNode;
 class Entity;
@@ -191,8 +191,6 @@ public:
 	std::vector <Edge*> edges;
 };
 
-//TODO 0: Things have changed around here, let's take our time to see what's new. Do not worry about the HPA* functions; we will deal with them later
-// The TODO 0.x are important, feel free to ask me any questions if you don't understand something or there's something wrong.
 
 class ModulePathfinding : public j1Module
 {
@@ -208,7 +206,8 @@ public:
 
 	//Pathfinding
 	PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl, Entity* pathRequest);
-	bool RequestPath(Entity* request, std::vector <iPoint>* path);
+	bool RequestPath(Entity* request, std::vector <iPoint>* pathToFill);
+	bool GetAbstractPath(Entity* request, std::vector <iPoint>* path);
 
 
 	//Utility

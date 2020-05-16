@@ -51,6 +51,7 @@ public:
 	SDL_Texture* debug_texPink;
 	SDL_Texture* debug_texYellow;
 	SDL_Texture* debug_texCyan;
+	SDL_Texture* debug_texBlack;
 
 
 
@@ -61,8 +62,7 @@ private:
 	bool clusters = false;
 
 	std::vector<iPoint> absPath;
-
-	float updatePathTimer = 0.f;
+	std::vector<iPoint> refinedPath;
 
 	int abstractDebugLvl = 0;
 

@@ -78,15 +78,12 @@ void Entity::SetToDelete(bool toDel)
 
 bool Entity::Move(float dt)
 {
-	// ----------------------------------------------------------------
 
 	fPoint pathSpeed = { 0,0 };
 	fPoint nextPoint = { 0,0 };
 
-	//TODO 6.1 (EXTRA): With everything set up, we just have to call the RequestPath function and fill the entity's path
+	//TODO 6.1 (EXTRA): With everything set up, we just have to call the RequestPath() function and fill the entity's path
 		// We can do this every frame, with a time condition, with a path legnth conditio...n; whatever fits your project!
-	//----
-
 	//----
 
 	if (path.size() > 0)
@@ -99,13 +96,11 @@ bool Entity::Move(float dt)
 		pathSpeed.create((nextPoint.x - position.x), (nextPoint.y - position.y)).Normalize();
 	}
 
-	// -----------------------------------------------------------------
 	pathSpeed = pathSpeed * ENTITY_SPEED;
 
 	position.x += (pathSpeed.x) * dt;
 	position.y += (pathSpeed.y) * dt;
 
-	// ------------------------------------------------------------------
 
 	if (path.size() > 0 && abs(position.x - nextPoint.x) <= 5 && abs(position.y - nextPoint.y) <= 5)
 	{
@@ -134,7 +129,6 @@ bool Entity::GeneratePath(int x, int y, int lvl)
 		//TODO 6.2 (EXTRA): This is optional, but it's nice to call a single RequestPath() when you generate the path
 		//----
 
-		//----
 
 		if (!path.empty())
 			path.erase(path.begin());

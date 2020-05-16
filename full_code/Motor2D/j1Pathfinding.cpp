@@ -15,56 +15,6 @@ ModulePathfinding::~ModulePathfinding()
 	RELEASE_ARRAY(walkabilityMap);
 }
 
-bool ModulePathfinding::LineRayCast(iPoint& p0, iPoint& p1)
-{
-	BROFILER_CATEGORY("RayCast", Profiler::Color::Cornsilk);
-
-	std::vector <iPoint> line = CreateLine(p0, p1);
-
-	bool currWalkability = false;
-
-	for (int i = 0; i < line.size(); i++)
-	{
-		currWalkability = IsWalkable(line[i]);
-
-		if (!currWalkability)
-			return false;
-	}
-
-
-	return true;
-}
-
-std::vector<iPoint> ModulePathfinding::CreateLine(const iPoint& p0, const iPoint& p1)
-{
-	last_line.clear();
-
-	float n = p0.DiagonalDistance(p1);
-
-	fPoint p0f = { (float)p0.x, (float)p0.y };
-	fPoint p1f = { (float)p1.x, (float)p1.y };
-
-	for (int step = 0; step <= n; step++)
-	{
-
-		float t = n == 0 ? 0.0 : step / n;
-
-		fPoint nextPointf = p0f.LerpPoint(p1f, t);
-		nextPointf.RoundPoint();
-
-		iPoint nextPoint = { (int)nextPointf.x, (int)nextPointf.y };
-		last_line.push_back(nextPoint);
-
-	}
-
-	return last_line;
-}
-
-std::vector<iPoint>* ModulePathfinding::GetLastLine()
-{
-	return &last_line;
-}
-
 bool ModulePathfinding::CleanUp()
 {
 	LOG("Freeing pathfinding library");
@@ -109,7 +59,6 @@ bool ModulePathfinding::CleanUp()
 	return true;
 }
 
-
 void ModulePathfinding::SetMap(uint width, uint height, uchar* data)
 {
 	//Basic A*----------------------------------------
@@ -152,6 +101,7 @@ void HPAGraph::PrepareGraph()
 	//Uncomment the code & proceed to the 1.1 & 1.2 TODO
 
 	//Build the first level clusters & entrances
+
 	BuildClusters(1);
 	BuildEntrances();
 
@@ -183,7 +133,7 @@ void HPAGraph::CreateInterNodes(int lvl)
 	Entrance* currEntrance = nullptr;
 	Cluster* c1, * c2;
 
-	//TODO 2.1: Here the Nodes between Clusters are created. The function is separated in two  for better visibility.
+	//TODO 2.1: Here the Nodes between Clusters are created.
 	// Just check how lateral is created & then do the vertical one (the logic is the same, you just have to change the axis)
 	// Be careful with the position!
 
@@ -239,7 +189,7 @@ void HPAGraph::CreateInterNodes(int lvl)
 
 			//We make sure that the last spot has a node for path stability
 			BuildInterNode({ maxSize - 1, currEntrance->pos.y }, c1, { maxSize - 1, currEntrance->pos.y + 1 }, c2, lvl);
-			
+
 			//---
 		}
 		break;
@@ -291,24 +241,30 @@ void HPAGraph::CreateIntraNodes(int lvl)
 {
 	Cluster* clusterIt;
 	float distanceTo = 0;
-	int currLvl = lvl - 1;
+	int clusterLevel = lvl - 1;
+	int edgeLevel = lvl;
+
+	HierNode* n1 = nullptr;
+	HierNode* n2 = nullptr;
+
+	if (clusterLevel > lvlClusters.size() || lvlClusters.empty())
+		return;
 
 	//TODO 2.2: Here we iterate trough all the nodes in a same cluster for all the cluster in a same level
 	// Simply call the function to create edges between the different nodes with the INTRA type
 	// Check the function CreateEdges()
 
-
-	for (int i = 0; i < lvlClusters[currLvl].size(); i++)
+	for (int i = 0; i < lvlClusters[clusterLevel].size(); i++)
 	{
-		clusterIt = &lvlClusters[currLvl].at(i);
+		clusterIt = &lvlClusters[clusterLevel].at(i);
 
 		for (int y = 0; y < clusterIt->clustNodes.size(); y++)
 		{
 			for (int k = y + 1; k < clusterIt->clustNodes.size(); k++)
 			{
 				//--
-				CreateEdges(clusterIt->clustNodes[y], clusterIt->clustNodes[k], lvl, EDGE_TYPE::INTRA);
-				//---
+				CreateEdges(clusterIt->clustNodes[y], clusterIt->clustNodes[k], edgeLevel, EDGE_TYPE::INTRA);
+
 
 			}
 		}
@@ -395,6 +351,9 @@ void HPAGraph::BuildEntrances()
 	Cluster* c2;
 	ADJACENT_DIR adjacentDir = ADJACENT_DIR::DIR_NONE;
 
+	// Since the Entrances are just created in the lowest abstraction LVL, their lvl is always 0
+	int EntranceLvl = 1;
+
 	//TODO 1.2: Here we iterate through all the clusters; just check if a pair of clusters is adjacent & if so create entrances for it
 	// Check the functions ClustersAreAdjacent() & CreateEntrance()
 
@@ -408,12 +367,12 @@ void HPAGraph::BuildEntrances()
 			c2 = &this->lvlClusters[0].at(k);
 
 			//----
-			adjacentDir = ClustersAreAdjacent(c1, c2, 1);
+			adjacentDir = ClustersAreAdjacent(c1, c2, EntranceLvl);
 
 			if (adjacentDir != ADJACENT_DIR::DIR_NONE)
-				CreateEntrance(c1, c2, adjacentDir, 1);
-			//---
-}
+				CreateEntrance(c1, c2, adjacentDir, EntranceLvl);
+
+		}
 	}
 }
 
@@ -511,8 +470,8 @@ ADJACENT_DIR HPAGraph::ClustersAreAdjacent(Cluster* c1, Cluster* c2, int lvl)
 void HPAGraph::BuildClusters(int lvl)
 {
 	//TODO 1.1: The clusters are created regulary here.
-	// The code to calculate how big & were are the clusters is done, just add it to the buffer vector & then add it to the
-	// vector of clusters vectors (ask me about this :P) we have already declared
+	// The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1) & then add it to the
+	// vector of clusters vectors (ask me about this :P) we have already declared (*2)
 
 
 	//Cluster distance in the current level
@@ -548,13 +507,13 @@ void HPAGraph::BuildClusters(int lvl)
 
 			//Introduce the Cluster into the vector buffer
 			c.pos = { i,k };
-			//------
+			//------ (*1)
 			clusterVector.push_back(Cluster(c));
 		}
 	}
 
 	//Introduce the vector to the main one
-	//------
+	//------ (*2)
 	this->lvlClusters.push_back(clusterVector);
 }
 
@@ -574,17 +533,12 @@ HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 	if (!c)
 		return nullptr;
 
-
-	//TODO 3: This is simple, search if the NodeExists() in the cluster that is checked above 
-	// If it doesn't exist, create it: you'll have to push it in the cluster Node Vector & connect it t the other nodes in the same
+	//TODO 3: This is simple, if the node exist in the cluster we do not do anything 
+	// If it doesn't exist, create it: you'll have to push it in the cluster Node Vector (ClustNodes)  & connect it t the other nodes in the same
 	// cluster (Check ConnectNodeToBorder()).
-	//---
 
-		//Check if already exists
-		newNode = NodeExists(pos, c);
-	//---
-
-
+	//Check if already exists
+	newNode = NodeExists(pos, c);
 
 	//If can be placed inside a cluster & there is no node already there, we create one
 	if (!newNode)
@@ -594,7 +548,6 @@ HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 		ConnectNodeToBorder(newNode, c, Lvl);
 		*toDelete = true;
 	}
-	//---
 
 	return newNode;
 }
@@ -852,12 +805,11 @@ uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lv
 	HierNode* currNode = nullptr;
 	Edge* currEdge = nullptr;
 
-	// TODO 4: Let's find the walkable node adjacents. We have to iterate though all the HierNode's edges & add them to the list.
-	// Be careful, in order to have multiple abstraction levels we will have to check these conditions befor we insert a node to the list:
-				//INTRA: have to be from the same level
-				//INTER: can be from the same level or superior
-	//Also, the g is not calculate in CalculateF, you can do it here
-	//---
+	// TODO 4: Let's find the walkable node adjacents. We have to iterate though all the HierNode's edges 
+	// But that is already done, you just have to Create new Hiernodes & Insert them into the list
+	//The Hiernodes will we determined by the Edges movement Cost & it's destination Node (Take a look at the Edge Struct)
+	//Remeber that the G has to be calculated when the Hiernode is inserted!
+
 
 	//Iterate though all the node edges
 	for (int i = 0; i < edgeNum; i++)
@@ -869,14 +821,12 @@ uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lv
 			//INTER: can be from the same level or superior
 		if (currEdge->type == EDGE_TYPE::INTRA && currEdge->lvl == lvl || currEdge->type == EDGE_TYPE::INTER && currEdge->lvl >= lvl)
 		{
+			//----
 			currNode = currEdge->dest;
-			list_to_fill.push_back(HierNode(currEdge->moveCost + this->g, currNode->pos, this, myDirection, currNode->parentDir, currNode->edges));
+			list_to_fill.push_back(HierNode(currEdge->moveCost + this->g, currNode->pos, this, myDirection, 0, currNode->edges));
 		}
 
 	}
-
-	//---
-
 
 
 	return list_to_fill.size();
@@ -1023,7 +973,11 @@ int ModulePathfinding::HPAPathfinding(const HierNode& origin, const iPoint& dest
 	}
 }
 
+//TODO 0: Things have changed around here, let's take our time to see what's new.
+// These todos are important, feel free to ask me any questions if you don't understand something or there's something wrong.
+// In the TODOS there is a ( //---- ) to indicate where you have to do code
 
+//TODO 0.1: The A* now works with std containers!
 float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& destination)
 {
 	BROFILER_CATEGORY("A* Algorithm", Profiler::Color::Black);
@@ -1099,7 +1053,7 @@ float ModulePathfinding::SimpleAPathfinding(const iPoint& origin, const iPoint& 
 }
 
 //Entities will call this to request their path
-bool ModulePathfinding::RequestPath(Entity* request, std::vector <iPoint>* path)
+bool ModulePathfinding::RequestPath(Entity* request, std::vector <iPoint>* pathToFill)
 {
 	BROFILER_CATEGORY("RequestPath", Profiler::Color::Khaki);
 
@@ -1117,13 +1071,47 @@ bool ModulePathfinding::RequestPath(Entity* request, std::vector <iPoint>* path)
 			{
 			case PATH_TYPE::SIMPLE:
 			{
-				path->insert(path->end(), it->second.path.begin(), it->second.path.end());
+				pathToFill->insert(pathToFill->end(), it->second.path.begin(), it->second.path.end());
 				return true;
 			}
 			break;
 			case PATH_TYPE::ABSTRACT:
 			{
-				return RefineAndSmoothPath(&it->second.path, it->second.pathLvl, path);;
+				return RefineAndSmoothPath(&it->second.path, it->second.pathLvl, pathToFill);;
+			}
+			break;
+			}
+		}
+		it++;
+	}
+
+	return false;
+}
+
+bool ModulePathfinding::GetAbstractPath(Entity* request, std::vector<iPoint>* path)
+{
+	if (generatedPaths.size() < 1)
+		return false;
+
+	std::unordered_map<Entity*, GeneratedPath>::iterator it = generatedPaths.begin();
+
+	int maxSize = generatedPaths.size();
+	for (int i = 0; i < maxSize; i++)
+	{
+		if (it->first == request)
+		{
+			switch (it->second.type)
+			{
+			case PATH_TYPE::SIMPLE:
+			{
+				return false;
+			}
+			break;
+			case PATH_TYPE::ABSTRACT:
+			{
+				path->insert(path->end(), it->second.path.begin(), it->second.path.end());
+
+				return true;
 			}
 			break;
 			}
@@ -1135,52 +1123,56 @@ bool ModulePathfinding::RequestPath(Entity* request, std::vector <iPoint>* path)
 }
 
 
-bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lvl, std::vector<iPoint>* pathToFill)
+bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, int lvl, std::vector<iPoint>* pathToFill)
 {
 	BROFILER_CATEGORY("Refine And Smooth Path", Profiler::Color::RosyBrown);
 
-	std::vector <iPoint>* generatedPath = nullptr;
 	iPoint currPos = { -1, -1 };
 	iPoint startPos = { -1, -1 };
 
 	int from = -1;
-	int pathSize = absPath->size();
+	Cluster* startCluster = nullptr;
 
-	Cluster* fromC = nullptr;
+	int pathSize = abstractPath->size();
 
 	for (int i = 0; i < pathSize; i)
 	{
-		currPos = absPath->at(i);
+		currPos = abstractPath->at(i);
 
 		//Grab the first node
 		if (startPos.x == -1)
 		{
 			startPos = currPos;
 			from = i;
-			fromC = absGraph.DetermineCluster(startPos, lvl);
+			startCluster = absGraph.DetermineCluster(startPos, lvl);
 			i++;
 			continue;
 		}
 
+		//TODO 5: This is a big one. First of all read the whole function & understand what is happening
 
+		//TODO 5.1: Currently the code just does nothing with the hierchial path, what you have to do is set the 
+				// conditions to refine the path & actually refined. 
+				// The conditions are: 
+					//Check that the current position is from a diferent cluster than the Start pne OR
+					// It is the last node in the Abstract Path
 
-		//TODO 5: This is a big one; currently the code just does nothing with the hierchial path, what you have to do is set the 
-	// conditions to refine the path & actually refined. The conditions are: 
-		//Check that Distance is not greater than Cluster Size
-		//Not be the last node
-	//Then you will have to refine the Path, we have to ways to do this:
-		//RayCasting: Very fast, doesn't like obstacles
-		// Direct A*: slower but can make whatever path you send to it.
-	//The ideal situation would be to check with a RayCast first & if not succesfull make an A*
-	//To insert the path, check the functions on the std::vector (Insert() might be usefull :P)
-	//Do not forget to delete the nodes from the hierchial path after you have refined them
-
-	//----
 		//Two Conditions to make path:
 			//Check that Distance is not greater than Cluster Size
 			//Not be the last node
-		if (fromC != absGraph.DetermineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
+
+		//----
+		if (startCluster != absGraph.DetermineCluster(currPos, lvl) || (i == pathSize - 1 && pathSize > 0))
 		{
+
+			//TODO 5.2: Then you will have to refine the Path, we have two ways to do this:
+							//RayCasting: Very fast, doesn't work through obstacles
+							// Direct A*: slower but can make whatever path you send to it.
+						//The ideal situation would be to check with a RayCast first & if not succesfull make an A*
+						//To insert the path, check the functions on the std::vector (Insert() might be usefull :P)
+			//-----
+
+			std::vector <iPoint>* generatedPath = nullptr;
 
 			//First Quick Check w/Ray Cast
 			if (LineRayCast(startPos, currPos) && !last_line.empty())
@@ -1197,30 +1189,34 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* absPath, int lv
 			//If the refinement was succesfull, we added to the request
 			if (generatedPath != nullptr)
 			{
-
 				//Last & not last cases:
 					//We don't want to introduce the first one since it will overlap with the last one already refined
+					/// If our code for following the path is solid this isn't necessary but it's nice to have
 				if (pathToFill->size() > 0)
 					pathToFill->insert(pathToFill->end(), generatedPath->begin() + 1, generatedPath->end());
 				else
 					pathToFill->insert(pathToFill->end(), generatedPath->begin(), generatedPath->end());
 			}
 
+			// TODO 5.3: Do not forget to delete the nodes from the hierchial path after you have refined them!
+			// Check the function on the std::vector erase()
+			//------
 			//Delete the abstract nodes we just refined
-			absPath->erase(absPath->begin() + from, absPath->begin() + i);
-			break;
+			abstractPath->erase(abstractPath->begin() + from, abstractPath->begin() + i);
+
+			return true;
 		}
 		//---
 		else
 		{
-			absPath->erase(absPath->begin() + 1);
+			abstractPath->erase(abstractPath->begin() + 1);
 			pathSize--;
 			continue;
 		}
 
 	}
 
-	return generatedPath;
+	return false;
 }
 
 
@@ -1301,4 +1297,56 @@ int ModulePathfinding::FindV(iPoint point, std::vector<HierNode>* vec)
 	}
 
 	return vec->size();
+}
+
+//TODO 0.2: We also have 2D RayCast functionallity
+//Raycast----------------------------------
+bool ModulePathfinding::LineRayCast(iPoint& p0, iPoint& p1)
+{
+	BROFILER_CATEGORY("RayCast", Profiler::Color::Cornsilk);
+
+	std::vector <iPoint> line = CreateLine(p0, p1);
+
+	bool currWalkability = false;
+
+	for (int i = 0; i < line.size(); i++)
+	{
+		currWalkability = IsWalkable(line[i]);
+
+		if (!currWalkability)
+			return false;
+	}
+
+
+	return true;
+}
+
+std::vector<iPoint> ModulePathfinding::CreateLine(const iPoint& p0, const iPoint& p1)
+{
+	last_line.clear();
+
+	float n = p0.DiagonalDistance(p1);
+
+	fPoint p0f = { (float)p0.x, (float)p0.y };
+	fPoint p1f = { (float)p1.x, (float)p1.y };
+
+	for (int step = 0; step <= n; step++)
+	{
+
+		float t = n == 0 ? 0.0 : step / n;
+
+		fPoint nextPointf = p0f.LerpPoint(p1f, t);
+		nextPointf.RoundPoint();
+
+		iPoint nextPoint = { (int)nextPointf.x, (int)nextPointf.y };
+		last_line.push_back(nextPoint);
+
+	}
+
+	return last_line;
+}
+
+std::vector<iPoint>* ModulePathfinding::GetLastLine()
+{
+	return &last_line;
 }

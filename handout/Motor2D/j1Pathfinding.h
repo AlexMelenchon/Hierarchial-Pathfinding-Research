@@ -129,7 +129,7 @@ struct HPAGraph
 	void BuildClusters(int lvl);
 
 	void BuildEntrances();
-	void CreateEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
+	void CreateEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir);
 
 	void BuildInterNode(iPoint n1, Cluster* c1, iPoint n2, Cluster* c2, int lvl);
 	void CreateInterNodes(int lvl);
@@ -191,9 +191,6 @@ public:
 	std::vector <Edge*> edges;
 };
 
-//TODO 0: Things have changed around here, let's take our time to see what's new. Do not worry about the HPA* functions; we will deal with them later
-// The TODO 0.x are important, feel free to ask me any questions if you don't understand something or there's something wrong.
-
 class ModulePathfinding : public j1Module
 {
 public:
@@ -208,7 +205,8 @@ public:
 
 	//Pathfinding
 	PATH_TYPE CreatePath(const iPoint& origin, const iPoint& destination, int maxLvl, Entity* pathRequest);
-	bool RequestPath(Entity* request, std::vector <iPoint>* path);
+	bool RequestPath(Entity* request, std::vector <iPoint>* pathToFill);
+	bool GetAbstractPath(Entity* request, std::vector <iPoint>* path);
 
 
 	//Utility

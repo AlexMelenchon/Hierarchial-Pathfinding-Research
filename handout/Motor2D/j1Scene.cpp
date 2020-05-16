@@ -64,6 +64,9 @@ bool j1Scene::Start()
 	debug_texCyan = App->tex->Load("maps/path2.png");
 	SDL_SetTextureColorMod(debug_texCyan, 0, 255, 255);
 
+	debug_texBlack = App->tex->Load("maps/path2.png");
+	SDL_SetTextureColorMod(debug_texBlack, 0, 0, 0);
+
 	return true;
 }
 
@@ -86,7 +89,9 @@ bool j1Scene::PreUpdate()
 		{
 			BROFILER_CATEGORY("HPA", Profiler::Color::DarkGreen);
 			absPath.clear();
+			refinedPath.clear();
 			App->pathfinding->CreatePath(origin, p, abstractDebugLvl + 1, nullptr);
+			App->pathfinding->GetAbstractPath(nullptr, &absPath);
 			origin_selected = false;
 		}
 		else
@@ -115,10 +120,12 @@ bool j1Scene::PreUpdate()
 
 		if (origin_selected == true && !movedAUnit)
 		{
+			refinedPath.clear();
 			absPath.clear();
+
 			BROFILER_CATEGORY("A*", Profiler::Color::Gold);
 			App->pathfinding->CreatePath(origin, p, 0, nullptr);
-			App->pathfinding->RequestPath(nullptr, &absPath);
+			App->pathfinding->RequestPath(nullptr, &refinedPath);
 
 		}
 		origin_selected = false;
@@ -190,7 +197,7 @@ bool j1Scene::Update(float dt)
 
 
 	//TODO 6 (EXTRA): Let's have entities & make them HPA*. Uncomment the code
-	//----
+
 	//if (App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
 	//{
 	//	int x, y;
@@ -200,9 +207,6 @@ bool j1Scene::Update(float dt)
 	//	if (App->pathfinding->IsWalkable(App->map->WorldToMap(mousePos.x, mousePos.y)))
 	//		App->entMan->AddNewEntity(ENTITY_TYPE::DYNAMIC, { (float)mousePos.x, (float)mousePos.y });
 	//}
-	//----
-
-
 
 
 
@@ -230,8 +234,9 @@ bool j1Scene::Update(float dt)
 
 	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
-		App->pathfinding->RequestPath(nullptr, &absPath);
-		updatePathTimer = 0.f;
+		App->pathfinding->RequestPath(nullptr, &refinedPath);
+		absPath.clear();
+		App->pathfinding->GetAbstractPath(nullptr, &absPath);
 	}
 
 
@@ -239,9 +244,24 @@ bool j1Scene::Update(float dt)
 	if (absPath.size() > 0)
 	{
 		if (clusters || nodes)
-			SDL_SetTextureAlphaMod(debug_tex, 255 * 0.5f);
+			SDL_SetTextureAlphaMod(debug_texBlack, 255 * 0.5f);
 
 		for (std::vector<iPoint>::iterator it = absPath.begin(); it != absPath.end(); ++it)
+		{
+			fPoint pos = App->map->MapToWorld(it->x, it->y);
+			App->render->Blit(debug_texBlack, pos.x, pos.y);
+		}
+		SDL_SetTextureAlphaMod(debug_texBlack, 255);
+
+	}
+
+	//Path debug draw
+	if (refinedPath.size() > 0)
+	{
+		if (clusters || nodes)
+			SDL_SetTextureAlphaMod(debug_tex, 255 * 0.5f);
+
+		for (std::vector<iPoint>::iterator it = refinedPath.begin(); it != refinedPath.end(); ++it)
 		{
 			fPoint pos = App->map->MapToWorld(it->x, it->y);
 			App->render->Blit(debug_tex, pos.x, pos.y);
