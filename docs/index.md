@@ -1509,7 +1509,7 @@ uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lv
 ### TODO 5
 - This is a big one. First of all read the whole function & understand what is happening
 
-### TODO 5.1
+#### TODO 5.1
 -  Currently the code just does nothing with the hierchial path, what you have to do is set the conditions to refine the path & actually refined. The conditions are: 
 	-Check that the current position is from a diferent cluster than the Start pne OR
 	-I t is the last node in the Abstract Path
@@ -1743,7 +1743,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%206.gif"  width="60%" height="60%">
 </p>
 
-### TODO 6.1
+#### TODO 6.1
 -  Now you can select units & make them pathfind but there is no refinement going on... Let's change that! 
 - With everything set up, we just have to call the RequestPath() function and fill the entity's path. We can do this every frame, with a time condition, with a path legnth conditio...n; whatever fits your project!
 	
