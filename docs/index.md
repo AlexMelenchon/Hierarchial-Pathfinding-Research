@@ -863,9 +863,9 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
    
   <p align="center"> 
 	
-   |  A*  |   HPA*   |
+|  A*  |   HPA*   |
 | ------------- | ------------- |
-| O (N) |  O( log(N) ) ||
+| O (N) |  O( log(N) ) |
 
 </p>
 
@@ -878,7 +878,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 |   |  Computation Time  |   Solution Length   |
 | ------------| ------------- | ------------- |
 |A* | 7.3ms | 126 |
-|HPA* ( on avg.) |1.18ms (0.2ms to Insert + 0.9ms to Pathfind)  | 34 ||
+|HPA* ( on avg.) |1.18ms (0.2ms to Insert + 0.9ms to Pathfind)  | 34 |
 
 
    - These are a handful of results for my approach, if you want to check more results you there you have a graphic from [Near Optimal Hierarchical Path-Finding paper](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf):
