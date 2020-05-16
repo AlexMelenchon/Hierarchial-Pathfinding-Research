@@ -1017,10 +1017,11 @@ void HPAGraph::BuildClusters(int lvl)
 }
 
 ```
+
 - Expected Result:
 	- When pressing F2, the groups of tiles named Clusters should appear in your screen like this:
 	
-   <p align="center">
+<p align="center">
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO1.1.gif"  width="60%" height="60%">
 </p>
 
@@ -1098,7 +1099,7 @@ void HPAGraph::BuildEntrances()
 - Expected Result:
 	- When pressing F1, the entrances between the previous Cluster should appear like this:
 	
-   <p align="center">
+ <p align="center">
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO1.2.gif"  width="60%" height="60%">
 </p>
 
@@ -1326,7 +1327,7 @@ oid HPAGraph::CreateIntraNodes(int lvl)
 - Expected Result:
 	- When pressing F4 (with the Nodes viewable (press F3)), all the connections between Nodes, the Edges, should appear like this:
 	
-   <p align="center">
+<p align="center">
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO1.2.gif"  width="60%" height="60%">
 </p>
 	
