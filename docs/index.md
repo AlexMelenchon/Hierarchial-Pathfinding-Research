@@ -861,25 +861,23 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 ### The Results
    - To better understand the results, first of all we have to know the worst computational cost of both the A* & the HPA*:
    
-  <p align="center"> 
+
 	
 | A*    | HPA*       |
 |-------|------------|
 | O (N) | O( log(N)) |
 
-</p>
 
    > Being N the length of the path to check. I got this information from the [GDC Hierarchical Dynamic Pathfinding presentation I mentioned before](https://twvideo01.ubm-us.net/o1/vault/gdc2018/presentations/Alain_Benoit_HierarchicalDynamicPathfinding.pdf)
 
    - Now into the Results, this was computed on a i5-4960K with 8GB of DDR3 1333Mhz running on a 64bit Windows 10 on a RELEASE:
 
-<p align="center">
 
 |                 | Computation Time                             | Solution Length |
 |-----------------|----------------------------------------------|-----------------|
 | A*              | 7.3ms                                        | 126             |
 | HPA* ( on avg.) | 1.18ms (0.2ms to Insert + 0.9ms to Pathfind) | 34              |
-</p>
+
 
 
    - These are a handful of results for my approach, if you want to check more results you there you have a graphic from [Near Optimal Hierarchical Path-Finding paper](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf):
@@ -966,6 +964,7 @@ void HPAGraph::BuildClusters(int lvl)
 
 
 - Solution:
+
 ```cpp   
 void HPAGraph::BuildClusters(int lvl)
 {
@@ -1061,6 +1060,7 @@ void HPAGraph::BuildEntrances()
 
 
 - Solution:
+
 ```cpp   
 
 void HPAGraph::BuildEntrances()
@@ -1163,6 +1163,7 @@ void HPAGraph::CreateInterNodes(int lvl)
 
 
 - Solution:
+
 ```cpp   
 void HPAGraph::CreateInterNodes(int lvl)
 {
@@ -1285,6 +1286,7 @@ void HPAGraph::CreateIntraNodes(int lvl)
 
 
 - Solution:
+
 ```cpp   
 oid HPAGraph::CreateIntraNodes(int lvl)
 {
@@ -1378,6 +1380,7 @@ HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 
 
 - Solution:
+
 ```cpp   
 
 HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
@@ -1458,6 +1461,7 @@ uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lv
 
 
 - Solution:
+
 ```cpp   
 
 uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lvl)
@@ -1588,6 +1592,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 
 
 - Solution:
+
 ```cpp   
 bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, int lvl, std::vector<iPoint>* pathToFill)
 {
@@ -1714,6 +1719,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 
 
 - Solution:
+
 ```cpp   
 	//TODO 6.0: Let's have entities & make them HPA*. Uncomment the code
 	//----
@@ -1758,6 +1764,7 @@ bool Entity::Move(float dt)
 
 
 - Solution:
+
 ```cpp   
 bool Entity::Move(float dt)
 {
@@ -1868,6 +1875,7 @@ bool Entity::Move(float dt)
 
 
 - Solution:
+
 ```cpp   
 	//TODO 7 (EXTRA): If you want more abstraction levels, just uncomment this 
 	// Just make sure the MAX_LEVELS define is above 1 & the TODO 4 is done correctly
