@@ -1422,7 +1422,7 @@ HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 - Expected Result:
 	- Proceed to the next TODO to check it visually!
 	
-### TODO 4.
+### TODO 4
 - et's find the walkable node adjacents. We have to iterate though all the HierNode's edges. But that is already done, you just have to Create new Hiernodes & Insert them into the list. The Hiernodes will we determined by the Edges movement Cost & it's destination Node (Take a look at the Edge Struct). Remeber that the G has to be calculated when the Hiernode is inserted!
 
 ```cpp   
@@ -1506,15 +1506,15 @@ uint HierNode::FindWalkableAdjacents(std::vector<HierNode>& list_to_fill, int lv
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO3%264.gif"  width="60%" height="60%">
 </p>
 
-### TODO 5:
+### TODO 5
 - This is a big one. First of all read the whole function & understand what is happening
 
-### TODO 5.1:
+### TODO 5.1
 -  Currently the code just does nothing with the hierchial path, what you have to do is set the conditions to refine the path & actually refined. The conditions are: 
 	-Check that the current position is from a diferent cluster than the Start pne OR
 	-I t is the last node in the Abstract Path
 
-#### TODO 5.2:
+#### TODO 5.2
 -  Then you will have to refine the Path, we have two ways to do this:
 	- RayCasting: Very fast, doesn't work through obstacles
 	- Direct A*: slower but can make whatever path you send to it.
@@ -1701,7 +1701,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 
 - **And congratulations, you have created an HPA* algorithm!! The following TODO's are optinal, but nice to have, although are specific & may or may not fit your project:**
 
-### TODO 6:
+### TODO 6
 - This one is going to be about entities and how they HPA*. First of all let's uncomment a very simple code that spawns entities in the mouse position:
 
 ```cpp   
@@ -1743,7 +1743,7 @@ bool ModulePathfinding::RefineAndSmoothPath(std::vector<iPoint>* abstractPath, i
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%206.gif"  width="60%" height="60%">
 </p>
 
-### TODO 6.1:
+### TODO 6.1
 -  Now you can select units & make them pathfind but there is no refinement going on... Let's change that! 
 - With everything set up, we just have to call the RequestPath() function and fill the entity's path. We can do this every frame, with a time condition, with a path legnth conditio...n; whatever fits your project!
 	
@@ -1800,7 +1800,7 @@ bool Entity::Move(float dt)
 <img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO%206.1.gif"  width="60%" height="60%">
 </p>
 
-#### TODO 6.2:
+#### TODO 6.2
 -  This is the same as above but placed just below the Abstract Path calculation. This is to make sure that your unit starts pathfinding in the same frame as you path; this is not really necessary if your move code is solid but it never hurts to have it!
 
 ```cpp   
@@ -1861,7 +1861,7 @@ bool Entity::Move(float dt)
 - Expected Result:
 	- Same as 3.1; just a little bit more consistent in code!
 			
-### TODO 7:
+### TODO 7
 -  As you might noticed, we are just doind a 1 level search since now, let's change that. Just uncomment the code and go to the define MAX_LEVELS to set how many levels you want. I encourage you to play around the CLUSTER_SIZE_LVL &  NODE_MIN_DISTANCE too!
 ```cpp   
 	//TODO 7 (EXTRA): If you want more abstraction levels, just uncomment this 
