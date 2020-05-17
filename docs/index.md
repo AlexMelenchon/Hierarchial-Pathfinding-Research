@@ -1328,7 +1328,7 @@ oid HPAGraph::CreateIntraNodes(int lvl)
 	- When pressing F4 (with the Nodes viewable (press F3)), all the connections between Nodes, the Edges, should appear like this:
 	
 <p align="center">
-<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO1.2.gif"  width="60%" height="60%">
+<img src="https://raw.githubusercontent.com/AlexMelenchon/Hierarchial-Pathfinding-Research/master/docs/gifs/TODO2.2.gif"  width="60%" height="60%">
 </p>
 	
 	
