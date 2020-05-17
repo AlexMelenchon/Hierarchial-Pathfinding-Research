@@ -1913,33 +1913,18 @@ bool Entity::Move(float dt)
 ## References and Extra Content
 
 - [Red Blob Games' A* Introduction](https://www.redblobgames.com/pathfinding/a-star/introduction.html)
-
-- - [Using the Hierarchical Pathfinding A* Algorithm in GIS to Find Paths through Rasters with Nonuniform Traversal Cost](file:///E:/Descargas/Using_the_Hierarchical_Pathfinding_A_Algorithm_in_.pdf)
-
+ - [Using the Hierarchical Pathfinding A* Algorithm in GIS to Find Paths through Rasters with Nonuniform Traversal Cost](file:///E:/Descargas/Using_the_Hierarchical_Pathfinding_A_Algorithm_in_.pdf)
 - [Another Approach to Regular HPA* Code](https://docs.rs/hierarchical_pathfinding/0.3.0/hierarchical_pathfinding/)
-
 - [Improvements to Hierarchical Pathfinding for Navigation Meshes](https://www.cs.upc.edu/~npelechano/MIG2017_Rahmani.pdf)
-
 - [Hierarchical Pathfinding in the gdxAI framework ](https://github.com/libgdx/gdx-ai/wiki/Hierarchical-Pathfinding)
-
 - [HPA* for navigation meshes](https://www.sciencedirect.com/science/article/abs/pii/S0097849316300668)
-
 - [Near Optimal Hierarchical Path-Finding](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf)
-
 - [Rust game development Ep. 27: Hierarchical Pathfinding and UI work](https://www.youtube.com/watch?v=qSbSb8vMbLI) by [Alexandru Ene](https://twitter.com/_AlexEne_)
-
--[Hierarchical Pathfinding and AI-Based Learning Approach in Strategy Game Design](https://www.hindawi.com/journals/ijcgt/2008/873913/)
-
+- [Hierarchical Pathfinding and AI-Based Learning Approach in Strategy Game Design](https://www.hindawi.com/journals/ijcgt/2008/873913/)
 - [Hierarchical Path-Finding Theta*](https://www.cs.ru.nl/bachelors-theses/2013/Linus_van_Elswijk___0710261___Hierarchical_Path-Finding_Theta_star_Combining_HPA_star_and_Theta_star.pdf)
-
 - [Hierarchical Dynamic Pathfinding Implementation for Castle Story](https://twvideo01.ubm-us.net/o1/vault/gdc2018/presentations/Alain_Benoit_HierarchicalDynamicPathfinding.pdf)
-
 - [Killzone 2 Multiplayer Bots' Hierarchical AI](https://drive.google.com/open?id=177H0M2sSvUmjmTRGl6RBFTQIqm7edVUp)
-
 - [Hierarchical AI for Multiplayer Bots in Killzone 3](http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter29_Hierarchical_AI_for_Multiplayer_Bots_in_Killzone_3.pdf)
-
 - [AI & Navigation Meshes in Starcraft II & Dragon Age Origins](https://www.gdcvault.com/play/1014514/AI-Navigation-It-s-Not)
-
 - [Improvents to A* & Jump Point Search Algorithm](https://lucho1.github.io/JumpPointSearch/) by  [Lucho Suaya](https://www.linkedin.com/in/luchosuaya/)
-
 - [Clearance-based Pathfinding and Hierarchical Annotated A* Search](https://web.archive.org/web/20190725152735/http://aigamedev.com/open/tutorials/clearance-based-pathfinding/)
