@@ -1910,6 +1910,9 @@ bool Entity::Move(float dt)
 - **[5]**: instead of savingg up the Cost when calculating the Cost for the Edges, instead, you could just save the Path. These would save up a little of time in the Refinement Process (since, instead of using RayCast or the A*; you would just insert the path already calculated) but take up a whole lot of memory.
 - **[6]**:  Currently, the code does not support for dynamic obstacles to be placed; in order to do this, you would haveto detect in which Clusters the dynamic object has been placed, "block" the Nodes that overlap with it & re-compute all the edges inside those Clusters. If you want to know more, check out [THIS](http://webdocs.cs.ualberta.ca/~kulchits/Jonathan_Testing/publications/ai_publications/jogd.pdf)
 
+## Thanks
+I can’t leave without thanking people that provide some help when making the research. I would like to thank [Oscar Pérez](https://www.linkedin.com/in/oscar-p%C3%A9rez-mart%C3%ADn-94a3a5196/) for helping me with the RayCast functionallity, [Jose Luís Redondo](https://github.com/jose-tello) for helping me with the optiimization of the std containers for pathfinding & Marc Garrigó, for giving me support though all the process. And, also, thanks to you for sitting through all of this. If you have any trouble with anything I explained, you can find me on my [GitHub](https://github.com/AlexMelenchon), [Linkedin](https://www.linkedin.com/in/alex-melench%C3%B3n-maza-a46981195/) or e-mail me to melenchonatona@gmail.com.
+
 ## References and Extra Content
 
 - [Red Blob Games' A* Introduction](https://www.redblobgames.com/pathfinding/a-star/introduction.html)
