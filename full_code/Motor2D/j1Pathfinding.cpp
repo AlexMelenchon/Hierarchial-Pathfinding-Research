@@ -190,7 +190,7 @@ void HPAGraph::CreateInterNodes(int lvl)
 			//We make sure that the last spot has a node for path stability
 			BuildInterNode({ maxSize - 1, currEntrance->pos.y }, c1, { maxSize - 1, currEntrance->pos.y + 1 }, c2, lvl);
 
-			//---
+
 		}
 		break;
 		}
@@ -260,10 +260,13 @@ void HPAGraph::CreateIntraNodes(int lvl)
 
 		for (int y = 0; y < clusterIt->clustNodes.size(); y++)
 		{
+			n1 = clusterIt->clustNodes[y];
 			for (int k = y + 1; k < clusterIt->clustNodes.size(); k++)
 			{
+				n2 = clusterIt->clustNodes[k];
+
 				//--
-				CreateEdges(clusterIt->clustNodes[y], clusterIt->clustNodes[k], edgeLevel, EDGE_TYPE::INTRA);
+				CreateEdges(n1, n2, edgeLevel, EDGE_TYPE::INTRA);
 
 
 			}
@@ -370,16 +373,14 @@ void HPAGraph::BuildEntrances()
 			adjacentDir = ClustersAreAdjacent(c1, c2, EntranceLvl);
 
 			if (adjacentDir != ADJACENT_DIR::DIR_NONE)
-				CreateEntrance(c1, c2, adjacentDir, EntranceLvl);
+				CreateEntrance(c1, c2, adjacentDir);
 
 		}
 	}
 }
 
-void HPAGraph::CreateEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl)
+void HPAGraph::CreateEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir)
 {
-	int adjDist = CLUSTER_SIZE_LVL * lvl;
-
 	Entrance newEntrance;
 	int startedAt = INT_MIN;
 	bool isCurrentWalkable = true;
@@ -469,9 +470,9 @@ ADJACENT_DIR HPAGraph::ClustersAreAdjacent(Cluster* c1, Cluster* c2, int lvl)
 //Builds clusters for an specific level
 void HPAGraph::BuildClusters(int lvl)
 {
-	//TODO 1.1: The clusters are created regulary here.
-	// The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1) & then add it to the
-	// vector of clusters vectors (ask me about this :P) we have already declared (*2)
+		//TODO 1.1: The clusters are created regulary here.
+		// The code to calculate how big & where the clusters are is done, just add it to the buffer vector (*1) & then add it to the
+		// vector of clusters vectors (ask me about this :P) we have already declared (*2)
 
 
 	//Cluster distance in the current level

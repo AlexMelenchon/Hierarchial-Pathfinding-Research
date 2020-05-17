@@ -518,7 +518,6 @@ HierNode* HPAGraph::insertNode(iPoint pos, int Lvl, bool* toDelete)
 		*toDelete = true;
 	}
 
-	//---
 
 	return newNode;
 }

@@ -129,7 +129,7 @@ struct HPAGraph
 	void BuildClusters(int lvl);
 
 	void BuildEntrances();
-	void CreateEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir, int lvl);
+	void CreateEntrance(Cluster* c1, Cluster* c2, ADJACENT_DIR adjDir);
 
 	void BuildInterNode(iPoint n1, Cluster* c1, iPoint n2, Cluster* c2, int lvl);
 	void CreateInterNodes(int lvl);
